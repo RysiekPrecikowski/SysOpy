@@ -3,4 +3,8 @@ project(lab1 C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(lab1 main.c)
+
+
+add_executable(lab1
+        zad1/myLib.h
+        zad1/myLib.c)

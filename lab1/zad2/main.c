@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
 #ifdef DYNAMIC
     void* handle = dlopen("./libmyLib.so", RTLD_LAZY);
     mainArray* (*createMainArr)(int) = dlsym(handle, "createMainArr");
+    void (*deleteMainArray)(mainArray*) = dlsym(handle, "deleteMainArray");
 //    int (*addBlockAtIndex)(mainArray*, block*, int) = dlsym(handle, "addBlockAtIndex");
     int (*addBlockToArray)(mainArray*, block*) = dlsym(handle, "addBlockToArray");
     int (*deleteRowAtIndex)(block*, int) = dlsym(handle, "deleteRowAtIndex");
@@ -148,6 +149,8 @@ int main(int argc, char* argv[]) {
     printf("Total times:\n");
     printTimes(&tmsTotalStart, &tmsTotalEnd, clockTotalStart, clockTotalEnd);
 
+    deleteMainArray(array);
+    return 0;
 }
 
 

@@ -24,6 +24,7 @@ int addBlockAtIndex(mainArray* arr, block *b, int ind);
 
 int addBlockToArray(mainArray* arr, block* b);
 
+void deleteMainArray(mainArray* arr);
 
 int deleteRowAtIndex(block* b, int ind);
 

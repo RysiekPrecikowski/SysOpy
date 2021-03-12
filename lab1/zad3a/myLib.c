@@ -10,6 +10,19 @@ mainArray* createMainArr(int arraySize){
     return res;
 }
 
+void deleteMainArray(mainArray* arr){
+    if (arr == NULL)
+        return;
+    if (arr->blocks != NULL){
+        for (int i = 0 ; i < arr->blockCount ; i++){
+            deleteBlockAtIndex(arr, i);
+        }
+        free(arr->blocks);
+        arr->blocks = NULL;
+    }
+    free(arr);
+}
+
 int addBlockAtIndex(mainArray* arr, block *b, int ind){
     if (arr == NULL || ind < 0 || ind >= arr->blockCount)
         return -1;
@@ -50,6 +63,7 @@ void freeBlockMemory(block* b){
         free(b->rows);
     }
     free(b);
+    b->rows = NULL;
 }
 
 int deleteBlockAtIndex(mainArray* arr, int ind){

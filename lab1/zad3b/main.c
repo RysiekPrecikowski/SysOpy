@@ -44,8 +44,14 @@ int main(int argc, char* argv[]) {
     block* (*getBlockAtIndex)(mainArray*, int) = dlsym(handle, "getBlockAtIndex");
 #endif
 
-    struct tms tmsStart, tmsTotalStart, tmsEnd, tmsTotalEnd;
-    clock_t clockStart, clockEnd, clockTotalStart, clockTotalEnd;
+
+
+    struct tms tmsTotalStart, tmsTotalEnd;
+//    struct tms tmsStart, tmsEnd;
+    clock_t clockTotalStart, clockTotalEnd;
+//    clock_t clockStart, clockEnd;
+
+    double sum = 0;
 
     clockTotalStart = times(&tmsTotalStart);
 
@@ -58,7 +64,7 @@ int main(int argc, char* argv[]) {
             int size = (int) strtol(arg, NULL, 10);
 
             array = createMainArr(size);
-            printf("Creating array, size = %d\n", size);
+//            printf("Creating array, size = %d\n", size);
 
 
         } else if (strcmp(command, "merge_files") == 0){
@@ -66,19 +72,19 @@ int main(int argc, char* argv[]) {
             char* f2 = strtok(NULL, ":");
 
             ////merging
-            clockStart = times(&tmsStart);
+//            clockStart = times(&tmsStart);
             char *merged = merge(f1, f2);
-            clockEnd = times(&tmsEnd);
+//            clockEnd = times(&tmsEnd);
 
-            printf("Merging times:\n");
-            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
+//            printf("Merging times:\n");
+//            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
             ////saving to block
-            clockStart = times(&tmsStart);
+//            clockStart = times(&tmsStart);
             block *b = readBlockFromFile(merged);
-            clockEnd = times(&tmsEnd);
+//            clockEnd = times(&tmsEnd);
 
-            printf("Saving block to memory times:\n");
-            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
+//            printf("Saving block to memory times:\n");
+//            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
 
             int j = addBlockToArray(array, b);
 
@@ -87,25 +93,25 @@ int main(int argc, char* argv[]) {
                 return -1;
             }
 
-            printf("added merged %s and %s at index: %d\n", f1, f2, j);
+//            printf("added merged %s and %s at index: %d\n", f1, f2, j);
 
 
         } else if (strcmp(command, "remove_block") == 0){
             int index = (int) strtol(arg, NULL, 10);
 
             ////deleting
-            clockStart = times(&tmsStart);
+//            clockStart = times(&tmsStart);
             int deleted = deleteBlockAtIndex(array, index);
-            clockEnd = times(&tmsEnd);
+//            clockEnd = times(&tmsEnd);
 
-            printf("Removing block times:\n");
-            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
+//            printf("Removing block times:\n");
+//            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
 
             if (deleted < 0){
                 printf("failed to remove block");
                 return -1;
             }
-            printf("removed block from index %d\n", index);
+//            printf("removed block from index %d\n", index);
 
 
         } else if (strcmp(command, "remove_row") == 0){
@@ -125,25 +131,25 @@ int main(int argc, char* argv[]) {
             }
 
             ////deleting row
-            clockStart = times(&tmsStart);
+//            clockStart = times(&tmsStart);
             int deletedRow = deleteRowAtIndex(b, rowIndex);
-            clockEnd = times(&tmsEnd);
+//            clockEnd = times(&tmsEnd);
 
-            printf("Removing row times:\n");
-            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
+//            printf("Removing row times:\n");
+//            printTimes(&tmsStart, &tmsEnd, clockStart, clockEnd);
 
             if (deletedRow < 0){
                 printf("cannot delete %d row at %d index", rowIndex, blockIndex);
                 return -1;
             }
-            printf("deleted %d row at %d index\n", rowIndex, blockIndex);
+//            printf("deleted %d row at %d index\n", rowIndex, blockIndex);
 
             i+=1;
         }
 
         
         i+=2;
-        printf("\n");
+//        printf("\n");
     }
     clockTotalEnd = times(&tmsTotalEnd);
     printf("Total times:\n");

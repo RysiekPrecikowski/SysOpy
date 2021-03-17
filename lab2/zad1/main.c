@@ -2,30 +2,114 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <fcntl.h>
 
+/*
+ Zadanie 1 (20%) Napisz program, który otwiera dwa pliki o nazwach podanych w wierszu poleceń.
+ Jeśli argumentów nie podano, wówczas nazwy plików mają być pobrane od użytkownika.
+ Program powinien wyświetlać wiersze z obu plików naprzemienne,
+ to znaczy: 1-szą linię z pierwszego pliku, 1-szą linię z drugiego pliku, 2-gą linię z pierwszego pliku,
+ 2-gą linię z drugiego pliku, itd., aż do momentu,
+ wyświetlenia ostatniego wiersza pliku zawierającego większą liczbę wierszy.
+ */
 
-char* readLine(FILE* fp){
+#define not !
+#define and &&
+#define or ||
+
+bool readLineLib(FILE* fp){
     if (fp == NULL)
         return NULL;
-    size_t maxN = 125;
-    char *buff = calloc(maxN, sizeof (char));
+    char c;
 
-    if (fgets(buff, maxN, fp) == NULL)
-        return NULL;
+    while(fread(&c, sizeof (char), 1, fp) == 1){
+        printf("%c", c);
+        if(c == '\n')
+            return true;
+    }
+    return false;
+}
 
-    if (feof(fp)){
-        char *ptr = buff;
-        while(*ptr && *ptr != '\n')
-            ptr++;
-        *ptr = '\n';
+bool readLineSys(int fd){
+    char c;
+
+    while (read(fd, &c, 1) == 1){
+        printf("%c", c);
+        if (c == '\n')
+            return true;
+    }
+    return false;
+}
+
+int printLinesLib(char* f1, char* f2){
+    FILE *fp1, *fp2;
+
+    fp1 = fopen(f1, "r");
+    fp2 = fopen(f2, "r");
+
+    if(fp1 == NULL or fp2 == NULL){
+        return -1;
     }
 
-    return buff;
+    bool l1, l2;
+    FILE *notEnded = NULL;
+    while (true){
+        l1 = readLineLib(fp1);
+        l2 = readLineLib(fp2);
+
+        if (not l1 or not l2){
+            if (not l1 and not l2){
+                break;
+            }
+            notEnded = (l1) ? fp1 : fp2;
+            break;
+        }
+    }
+    while (true){
+        l1 = readLineLib(notEnded);
+        if (not l1)
+            break;
+    }
+
+    fclose(fp1);
+    fclose(fp2);
+    return 0;
 }
+
+
+int printLinesSys(char* f1, char* f2){
+    int fd1, fd2;
+    fd1 = open(f1, O_RDONLY);
+    fd2 = open(f2, O_RDONLY);
+
+    if (fd1 < 0 or fd2 < 0)
+        return -1;
+    bool l1, l2;
+    int notEnded = -1;
+    while (true){
+        l1 = readLineSys(fd1);
+        l2 = readLineSys(fd2);
+
+        if (not l1 or not l2){
+            if (not l1 and not l2){
+                break;
+            }
+            notEnded = (l1) ? fd1 : fd2;
+            break;
+        }
+    }
+    while (true){
+        l1 = readLineSys(notEnded);
+        if (not l1)
+            break;
+    }
+    return 0;
+}
+
 
 int main (int argc, char* argv[])
 {
-    char *f1, *f2;
+    char *f1 = NULL, *f2 = NULL;
 
     if(argc == 1){
         char in1[50], in2[50];
@@ -40,40 +124,12 @@ int main (int argc, char* argv[])
         }
     }
 
-    FILE *fp1, *fp2;
-
-    fp1 = fopen(f1, "r");
-    fp2 = fopen(f2, "r");
-
-    if(fp1 == NULL || fp2 == NULL){
+    printf("\nBiblioteki\n\n");
+    if(printLinesLib(f1, f2) < 0)
         return -1;
-    }
 
-    char *line1, *line2;
-    FILE *notEnded = NULL;
-    while (true){
-        line1 = readLine(fp1);
-        line2 = readLine(fp2);
-        if (line1 == NULL || line2 == NULL) {
-            if (line1 == NULL && line2 == NULL)
-                break;
-
-            notEnded = (line1 != NULL) ? fp1 : fp2;
-            printf("%s", (line1 != NULL) ? line1 : line2);
-            break;
-        }
-        printf("%s%s", line1, line2);
-    }
-
-    while (true){
-        line1 = readLine(notEnded);
-        if (line1 == NULL)
-            break;
-        printf("%s", line1);
-    }
-
-    fclose(fp1);
-    fclose(fp2);
-
+    printf("\n\nSystemowo\n\n");
+    if(printLinesSys(f1, f2) < 0)
+        return -1;
     return 0;
 }

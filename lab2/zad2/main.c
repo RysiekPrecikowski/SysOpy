@@ -1,5 +1,78 @@
+#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#define not !
+#define and &&
+#define or ||
+/*
+ * Napisz program, który przyjmuje 2 argumenty wiersza poleceń.
+ * Pierwszy z argumentów jest znakiem, drugi nazwą pliku.
+ * Program powinien wyświetlić na ekranie tylko te
+ * wiersze pliku wejściowego,które zawierają dany znak.
+ * Zakładamy, że każdy wiersz w pliku kończy się znakiem
+ * przejścia do nowej linii. Przyjmujemy, że żaden wiersz
+ * nie przekracza długości 256 znaków.
+ */
+
+bool readLineLib(FILE* fp, char pattern){
+    if (fp == NULL)
+        return NULL;
+    char s[256], c;
+
+    size_t n;
+    bool flag = false;
+    for (int i = 0 ; i < 256 ; i++){
+        n = fread(&c, sizeof (char), 1, fp);
+
+        if (n == 1){
+            s[i] = c;
+
+            if (c == pattern)
+                flag = true;
+
+            if (c == '\n'){
+                if(flag)
+                    printf("%s", s);
+                return true;
+            }
+        } else
+            break;
+    }
+
+    return false;
+}
+
+bool readLineSys(int fd, char pattern){
+    char s[256], c;
+
+    size_t n;
+    bool flag = false;
+
+    for(int i = 0 ; i < 256 ; i++){
+        n = read(fd, &c, 1);
+
+        if (n == 1){
+            s[i] = c;
+
+            if (c == pattern)
+                flag = true;
+
+            if (c == '\n'){
+                if (flag)
+                    printf("%s", s);
+                return true;
+            }
+        } else
+            break;
+    }
+    return false;
+}
+
 
 int main (int argc, char* argv[])
 {
@@ -24,13 +97,14 @@ int main (int argc, char* argv[])
     if (fp == NULL)
         return -1;
 
-    char buff[256];
 
-    while (fgets(buff, sizeof (buff), fp)){
-        if (strchr(buff, *c) != NULL){
-            printf("%s", buff);
-        }
-    }
+    printf("\nBiblioteki\n\n");
+    while(readLineLib(fp, *c));
+
+
+    int fd = open(f, O_RDONLY);
+    printf("\n\nSystemowo\n\n");
+    while(readLineSys(fd, *c));
 
     return 0;
 }

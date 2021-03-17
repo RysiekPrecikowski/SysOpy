@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+
+
 bool isSquare(int num){
     int l = 1, r = num;
     while (l <= r){

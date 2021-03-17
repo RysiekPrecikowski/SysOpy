@@ -31,8 +31,8 @@ clean:
 
 libtests:
 	make --no-print-directory static
-	make --no-print-directory shared
-	make --no-print-directory dynamic
+#	make --no-print-directory shared
+#	make --no-print-directory dynamic
 
 all:
 	@rm -f results3b.txt

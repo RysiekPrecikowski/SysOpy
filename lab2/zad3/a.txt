@@ -1,1 +1,1 @@
-Liczb parzystych jest 13
+Liczb parzystych jest 17

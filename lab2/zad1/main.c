@@ -17,6 +17,7 @@
 #define and &&
 #define or ||
 
+
 bool readLineLib(FILE* fp){
     if (fp == NULL)
         return NULL;

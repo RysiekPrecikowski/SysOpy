@@ -10,6 +10,16 @@
 #define and &&
 #define or ||
 
+/*
+ * W pliku dane.txt znajdują się w kolejnych wierszach losowe liczby.
+ * Do pliku a.txt wpisz ilość liczb parzystych znajdujących się
+ * w pliku dane.txt w następującej postaci: ”Liczb parzystych
+ * jest [ilość liczb]”. Do pliku b.txt skopiuj wszystkie liczby
+ * z pliku dane.txt, w których cyfra dziesiątek jest równa 7 lub 0.
+ * Do pliku c.txt skopiuj wszystkie liczby, które są kwadratami liczb
+ * całkowitych, np. taką liczbą jest liczba 225, ponieważ 225 = 15^2.
+ */
+
 int MAX_LEN = 10;
 
 bool isSquare(int num){
@@ -27,13 +37,17 @@ bool isSquare(int num){
     return false;
 }
 
-int readNumberLib(FILE* fp, int *num){
+int readNumberLib(FILE* fp, int *num, char* string, int* k){
     *num = 0;
     char c;
     int sign = 1;
 
+    for (int i = 0 ; i < MAX_LEN ; i++)
+        string[i] = '\0';
+    *k = 0;
     while(fread(&c, sizeof (char), 1, fp) == 1){
-
+        string[*k] = c;
+        (*k)++;
         if (c != '\n') {
             if (c == '-')
                 sign = -1;
@@ -141,12 +155,13 @@ int doItLib(){
 
     int num;
     int evenCounter = 0;
-
+    char string[MAX_LEN];
+    int len;
     while (true){
-        if (readNumberLib(fp, &num) != 0)
+        if (readNumberLib(fp, &num, string, &len) != 0)
             break;
 
-        printf("%d\n", num);
+        printf("%d %s %d\n", num, string, len);
         if (num % 2 == 0){
             evenCounter += 1;
         }
@@ -154,17 +169,28 @@ int doItLib(){
         if ((tDigit == 7 && num >= 10 )
             || (tDigit == 0 && num >= 100)){
 
-            if(fprintf(tensDigits, "%d\n", num) < 0)
-                return -1;
+            fwrite(string, sizeof (char ), len, tensDigits);
 
         }
         if (isSquare(num)) {
-            if(fprintf(square, "%d\n", num) < 0)
-                return -1;
+            fwrite(string, sizeof (char ), len, square);
         }
     }
-    if (fprintf(even, "Liczb parzystych jest %d", evenCounter) < 0)
-        return -1;
+    char tekst[] = {"Liczb parzystych jest "};
+    fwrite(tekst, sizeof (char ), sizeof(tekst) -1, even);
+
+    char tmp[20];
+    for (int i = 0 ; i < sizeof (tmp) ; i++)
+        tmp[i] = '\0';
+    sprintf(tmp,"%d", evenCounter);
+
+    int k = 0;
+    while(evenCounter > 0){
+        k+=1;
+        evenCounter /=10;
+    }
+
+    fwrite(tmp, sizeof (char ), k, even);
 
     fclose(fp);
     fclose(even);
@@ -179,8 +205,8 @@ int main (void)
     if (doItLib() != 0)
         return -1;
 
-    if (doItSys() != 0)
-        return -1;
+//    if (doItSys() != 0)
+//        return -1;
 
     return 0;
 }

@@ -5,7 +5,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
+#include <sys/times.h>
+#include "measureTimes.c"
 #define not !
 #define and &&
 #define or ||
@@ -18,6 +19,7 @@
  * przejścia do nowej linii. Przyjmujemy, że żaden wiersz
  * nie przekracza długości 256 znaków.
  */
+
 
 bool readLineLib(FILE* fp, char pattern){
     if (fp == NULL)
@@ -89,6 +91,7 @@ int main (int argc, char* argv[])
         if (argc == 3){
             c = argv[1];
             f = argv[2];
+
         }
     }
 
@@ -97,14 +100,24 @@ int main (int argc, char* argv[])
     if (fp == NULL)
         return -1;
 
+    Times lib, sys;
 
-    printf("\nBiblioteki\n\n");
+    printf("\nLib\n\n");
+    start(&lib);
     while(readLineLib(fp, *c));
+
+    end(&lib);
 
 
     int fd = open(f, O_RDONLY);
-    printf("\n\nSystemowo\n\n");
+    printf("\n\nSys\n\n");
+
+    start(&sys);
     while(readLineSys(fd, *c));
+
+    end(&sys);
+
+    printAllStatistics(&lib, &sys, "pomiar_zad_2.txt");
 
     return 0;
 }

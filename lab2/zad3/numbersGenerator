@@ -1,0 +1,13 @@
+#!/bin/bash
+filecount=0
+
+iter=0
+rm -f dane.txt
+while [ $iter -lt $1 ]; do
+  echo $(( 2*$RANDOM - $RANDOM )) >> dane.txt
+    ((iter++))
+done
+
+echo >> dane.txt
+
+

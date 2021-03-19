@@ -1,0 +1,10 @@
+
+Lib times:
+real time: 1.140000
+ sys time: 0.670000
+user time: 0.400000
+
+Sys times:
+real time: 7.380000
+ sys time: 6.520000
+user time: 0.840000

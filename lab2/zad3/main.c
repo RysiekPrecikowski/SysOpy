@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/times.h>
+#include "measureTimes.c"
 
 #define not !
 #define and &&
@@ -95,7 +97,7 @@ int readNumberSys(int fd, int* num, char* string, int* k){
     return -1;
 }
 
-int doItSys(){
+int categorizeNumbersSys(){
     int fd = open("dane.txt", O_RDONLY);
     int even = open("a.txt", O_WRONLY|O_CREAT|O_TRUNC ,S_IRUSR|S_IWUSR);
     int tensDigits = open("b.txt", O_WRONLY|O_CREAT|O_TRUNC ,S_IRUSR|S_IWUSR);
@@ -143,7 +145,7 @@ int doItSys(){
 }
 
 
-int doItLib(){
+int categorizeNumbersLib(){
     FILE *fp = fopen("dane.txt", "r");
     FILE *even = fopen("a.txt", "w");
     FILE *tensDigits = fopen("b.txt", "wb");
@@ -161,7 +163,7 @@ int doItLib(){
         if (readNumberLib(fp, &num, string, &len) != 0)
             break;
 
-        printf("%d %s %d\n", num, string, len);
+//        printf("%d %s %d\n", num, string, len);
         if (num % 2 == 0){
             evenCounter += 1;
         }
@@ -200,13 +202,25 @@ int doItLib(){
 }
 
 
+
 int main (void)
 {
-    if (doItLib() != 0)
-        return -1;
+    Times lib, sys;
 
-//    if (doItSys() != 0)
-//        return -1;
+    start(&lib);
+    if (categorizeNumbersLib() != 0)
+        return -1;
+    end(&lib);
+
+
+
+    start(&sys);
+    if (categorizeNumbersSys() != 0)
+        return -1;
+    end(&sys);
+
+    printAllStatistics(&lib, &sys, "pomiar_zad_3.txt");
+
 
     return 0;
 }

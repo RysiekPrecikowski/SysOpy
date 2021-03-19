@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/times.h>
+#include "measureTimes.c"
+
 
 #define not !
 #define and &&
@@ -119,9 +122,24 @@ int main (int argc, char* argv[]){
     in = argv[1];
     out = argv[2];
 
-    addNewLinesLib(in, out, 10);
+    int amount = 50;
 
-    addNewLinesSys(in, out, 10);
 
+    Times lib, sys;
+
+    addNewLinesLib(in, out, amount);
+
+
+
+    start(&lib);
+    addNewLinesLib(in, out, amount);
+    end(&lib);
+
+
+    start(&sys);
+    addNewLinesSys(in, out, amount);
+    end(&sys);
+
+    printAllStatistics(&lib, &sys, "pomiar_zad_5.txt");
     return 0;
 }

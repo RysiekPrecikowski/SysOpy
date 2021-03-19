@@ -13,9 +13,6 @@ double calculate_time(clock_t start, clock_t end){
     return (double) (end - start) / sysconf(_SC_CLK_TCK);
 }
 
-typedef struct execTimes{
-
-}execTimes;
 
 void printTimes(struct tms *tmsStart, struct tms *tmsEnd, clock_t clockStart, clock_t clockEnd){
     printf("real time: %f\n", calculate_time(clockStart, clockEnd));

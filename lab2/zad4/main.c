@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/times.h>
+#include "measureTimes.c"
+
 
 #define not !
 #define and &&
@@ -132,9 +135,22 @@ int main (int argc, char* argv[]){
     from = argv[3];
     to = argv[4];
 
-    changeOccurrencesLib(in, out, from, to);
+    Times lib, sys;
 
-//    changeOccurrencesSys(in, out, from, to);
+
+    start(&lib);
+
+    changeOccurrencesLib(in, out, from, to);
+    end(&lib);
+
+
+
+    start(&sys);
+    changeOccurrencesSys(in, out, from, to);
+
+    end(&sys);
+
+    printAllStatistics(&lib, &sys, "pomiar_zad_4.txt");
 
     return 0;
 }

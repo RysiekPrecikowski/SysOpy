@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <fcntl.h>
 
+#include "measureTimes.c"
 /*
  Zadanie 1 (20%) Napisz program, który otwiera dwa pliki o nazwach podanych w wierszu poleceń.
  Jeśli argumentów nie podano, wówczas nazwy plików mają być pobrane od użytkownika.
@@ -16,6 +17,7 @@
 #define not !
 #define and &&
 #define or ||
+
 
 
 bool readLineLib(FILE* fp){
@@ -125,12 +127,25 @@ int main (int argc, char* argv[])
         }
     }
 
-    printf("\nBiblioteki\n\n");
+    Times lib, sys;
+
+    printf("\nLib\n\n");
+
+    start(&lib);
     if(printLinesLib(f1, f2) < 0)
         return -1;
 
-    printf("\n\nSystemowo\n\n");
+    end(&lib);
+
+
+
+    printf("\n\nSys\n\n");
+    start(&sys);
     if(printLinesSys(f1, f2) < 0)
         return -1;
+    end(&sys);
+
+    printAllStatistics(&lib, &sys, "pomiar_zad_1.txt");
+
     return 0;
 }

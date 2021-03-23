@@ -61,22 +61,40 @@ int main(void){
     pid_t parent_pid = getpid();
     printf("parent pid: %d\n\n", parent_pid);
     int n = 10;
+    int myid = 0;
+    int status;
+
     for (int i = 0 ; i < n ; i++){
         if (getpid() == parent_pid){
-
+            myid++;
             fork();
             if (getpid() != parent_pid)
                 printf("odpalil sie %d a jego parent to %d\n", getpid(), getppid());
         }
     }
 
+    // jesli to dziecko to wykonuje kod przeznaczony dla dziecka
     if (getpid() != parent_pid)
         printf("   printuje %d a    rodzic   to %d\n", getpid(), getppid());
 
 
-//    while (wait(NULL) == parent_pid)
-    if(getpid() == parent_pid)
+    // jesli to parent to
+    if(getpid() == parent_pid) {
+        // If the current process have no child processes, wait(NULL) returns -1 <---- czyli czekam az wszystkie odpalone dzieci umra
+//        while (wait(NULL) > 0){
+//            printf("czekam se\n");
+//        }
+        //waitpid (-1, status, 0) dziala jak wait(null), ale dodatkowo mozna zdobyc kod zakonczenia procesu dziecka
+        while (waitpid(-1, &status, 0) > 0){
+            printf("czekam se, dziecko zwrocilo %d\n", WEXITSTATUS(status));
+        }
+
         printf("\nPARENT UMAR returnuje %d\n\n", getpid());
+    } else {
+        // my id jest z petli przed sforkowaniem, kazde dziecko ma wlasny numer ktory zwraca do parenta
+        printf("\nDZIECKO %d UMARLO\n", getpid());
+        return myid;
+    }
 
     return 0;
 }

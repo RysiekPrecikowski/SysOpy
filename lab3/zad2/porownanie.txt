@@ -1,0 +1,2 @@
+Łączenie plików z wykorzystaniem procesów jest dużo szybsze niż standardowo (nawet 10 razy).
+Czas systemowy i użytkownika są dużo prawie zerowe

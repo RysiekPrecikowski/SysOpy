@@ -29,18 +29,3 @@ void printTimesToFile(Times *time, FILE *fp){
     fprintf(fp, " sys time: %f\n", calculate_time(time->tmsStart.tms_stime, time->tmsEnd.tms_stime));
     fprintf(fp, "user time: %f\n", calculate_time(time->tmsStart.tms_utime, time->tmsEnd.tms_utime));
 }
-
-
-void printAllStatistics(Times *lib, Times *sys, char *filename){
-    printf("\nLib times:\n");
-    printTimes(lib);
-
-    printf("\nSys times:\n");
-    printTimes(sys);
-
-    FILE *resFP = fopen(filename, "w");
-    fprintf(resFP, "\nLib times:\n");
-    printTimesToFile(lib, resFP);
-    fprintf(resFP, "\nSys times:\n");
-    printTimesToFile(sys, resFP);
-}

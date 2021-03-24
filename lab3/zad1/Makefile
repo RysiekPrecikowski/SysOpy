@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -std=c11 -g
 
 run: compile
-	./main
+	./main 10
 
 clean:
 	rm -f *.o *.a *.so main

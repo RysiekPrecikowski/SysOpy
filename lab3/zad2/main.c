@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/resource.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <string.h>
@@ -47,27 +45,20 @@ int merge(char* fileName1, char* fileName2){
 
     char *line1, *line2;
     char resName[20];
-//    char buf[10];
-//    strcat(resName, "merged");
+
+    //create tmp file for every child :)
     snprintf(resName, 20, "merged%d.tmp", getpid());
-//    strcat(resName, )
     FILE* fp = fopen(resName,"w");
     if (fp == NULL)
         return -1;
 
-    printf("dzieciak wchodzi do funckji %d\n", getpid());
-    printf("jego argumenty to: %s %s\n", fileName1, fileName2);
-
     while (true) {
-//        printf("%d\n", getpid());
         line1 = readLine(f1);
         line2 = readLine(f2);
         if (line1 == NULL || line2 == NULL)
             break;
-        if (fprintf(fp, "%s%s", line1, line2) < 0){
+        if (fprintf(fp, "%s%s", line1, line2) < 0)
             return -1;
-        }
-
     }
     fclose(f1);
     fclose(f2);
@@ -76,49 +67,47 @@ int merge(char* fileName1, char* fileName2){
 }
 
 
-
 int main(int argc, char* argv[]){
     int i = 1;
     int status;
     pid_t parent_pid = getpid();
-    pid_t child_pid;
-    printf("parent pid: %d\n\n", parent_pid);
+
     char *arg;
+    Times times;
+
+    start(&times);
     while (i + 1 < argc){
         char *command = argv[i];
         arg = argv[i+1];
         if (strcmp(command, "merge_files") == 0){
             if(getpid() == parent_pid){
-                child_pid = fork();
-                printf("\nidk child_pid %d, getpid %d\n\n", child_pid, getpid());
-                if (getpid() != parent_pid) {
-                    printf("dzieciak odpala merga %d\n", getpid());
-                    char *f1 = strtok(arg, ":");
-                    char *f2 = strtok(NULL, ":");
-
-
-                    if (merge(f1, f2) != 0) {
-                        printf("returnuje -1\n");
-                        return -1;
-                    }
-                }
+                // create child process, leave loop with 2 files to merge remembered in arg
+                // parent continues going, only child is breaking
+                if (fork() == 0)
+                    break;
             }
-
         }
-
         i+=2;
-        printf("\n");
     }
 
+    if (getpid() != parent_pid) {
+        char *f1 = strtok(arg, ":");
+        char *f2 = strtok(NULL, ":");
 
+        if (merge(f1, f2) != 0)
+            return -1;
+    }
 
+    //wait for all children to end
     if(getpid() == parent_pid){
         while (waitpid(-1, &status, 0) > 0){
-            printf("czekam seeee, dziecko zwrocilo %d\n", WEXITSTATUS(status));
-            if (WEXITSTATUS(status) != 0){
+            if (WEXITSTATUS(status) != 0)
                 return -1;
-            }
         }
+
+        end(&times);
+
+        printTimes(&times);
     }
     return 0;
 }

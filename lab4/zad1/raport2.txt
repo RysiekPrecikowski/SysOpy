@@ -1,0 +1,10 @@
+FORK
+
+procesy potomne dziedziczą wszystko, oprócz oczekujacych sygnalow (zmienia sie pid)
+
+
+EXEC
+Procesy potomne dziedzicza wszystko, lacznie z oczekujacymi sygnalami (pid sie nie zmienia).
+
+
+dodatkowo: nie dziedzicza sie funkcje do obslugi sygnalow

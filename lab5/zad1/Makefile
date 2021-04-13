@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -Wall -std=c11 -g
+CFLAGS = -Wall -std=gnu11 -g
 
 run: compile
-	./main
+	./main to_interprete
 
 clean:
 	rm -f *.o *.a *.so main

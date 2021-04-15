@@ -125,9 +125,8 @@ commands_container *prepare_commands(FILE *fp) {
 
     char *line = NULL;
     size_t len = 0;
-    ssize_t read;
 
-    while ((read = getline(&line, &len, fp)) > 1) {
+    while (read = getline(&line, &len, fp) > 1) {
         res->commands[res->n] = read_command(line);
         res->n += 1;
     }
@@ -137,8 +136,8 @@ commands_container *prepare_commands(FILE *fp) {
 // 0 -> odczyt 1 -> zapis
 void pipe_start(int out[2], int in[2]) {
     close(out[0]);
-    close(in[1]);
-    close(in[0]);
+//    close(in[1]);
+//    close(in[0]);
     dup2(out[1], STDOUT_FILENO);
 }
 
@@ -164,6 +163,7 @@ void swap_pipes(int out[2], int in[2]) {
 }
 
 void execute_one_command(commands_container *com) {
+    print_commands_container(com);
     int j, i;
     int out[2], in[2];
     pipe(out);
@@ -192,6 +192,7 @@ void execute_one_command(commands_container *com) {
             waitpid(child, NULL, 0);
         }
     }
+    printf("\n");
 }
 
 void execute_commands(FILE *fp, commands_container *commands) {

@@ -6,3 +6,4 @@ command4 = ls -al
 
 command4 | command2
 command1
+command3 | command2

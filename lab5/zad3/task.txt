@@ -1,0 +1,69 @@
+W problemie producenta i konsumenta występują dwa rodzaje procesów, które dzielą wspólny bufor dla
+produkowanych i konsumowanych jednostek. Zadaniem producenta jest wytworzenie surowca,
+umieszczenie go w buforze i rozpoczęcie pracy od nowa. Konsument pobiera surowiec z bufora i wykorzystuje go.
+
+
+30%
+    Przy pomocy potoków nazwanych zaimplementować problem Producenta i Konsumenta.
+
+    Napisać dwa niezależne programy - Producent oraz Konsument, które będą komunikować
+    się poprzez potok nazwany (kolejkę FIFO).  Do potoku pisać będzie wiele procesów wykonujących
+    program Producenta, a czytał będzie z niej jeden proces Konsumenta.
+
+    Dla zademonstrowania, że nie doszło do utraty ani zwielokrotnienia towaru surowiec będzie pobierany z pliku
+    przez Producenta (każdy Producent czyta dane z osobnego pliku) i umieszczany w innym pliku przez
+    Konsumenta (otrzymane dane od producenta nr i mają się pojawić w linii nr i pliku wynikowego).
+
+
+    Producent:
+
+    przyjmuje cztery argumenty: ścieżka do potoku nazwanego, numer wiersza, ścieżka do pliku
+    tekstowego z dowolną zawartością, N - liczba znaków odczytywanych jednorazowo z pliku
+
+    otwiera potok nazwany
+    wielokrotnie (aż do odczytania całego pliku):
+        - odczekuje losową ilość czasu (np. 1-2 sekund)
+        - zapisuje do potoku nazwanego: numer wiersza oraz odczytany fragment pliku (N odczytanych znaków)
+
+
+    Konsument:
+
+    przyjmuje trzy argumenty: ścieżka do potoku nazwanego, ścieżka do pliku tekstowego
+    (do którego będzie zapisywany odczytany tekst), N — liczba znaków odczytywanych jednorazowo z pliku
+
+    otwiera potok nazwany
+
+    wielokrotnie:
+        - odczytuje numer wiersza i oraz N kolejnych znaków potoku nazwanego
+        - umieszcza odczytane znaki w linii nr i pliku tekstowego (różnym od plików, z których korzystają producenci)
+
+    Pliki tekstowe powinny być krótkie (na 5-10 odczytów) i umożliwiać sprawdzenie poprawności działania
+    (brak utraty, zwielokrotnienia surowca). W szczególności każdy Producent powinien otrzymać wygenerowany
+    w dowolny sposób plik tekstowy z dowolną zawartością, ale w istotny sposób różniącą się od zawartości
+    plików innych Producentów. Na przykład jeden producent może otrzymać plik zawierający tylko konkretną
+    literę, inny tylko liczby itd.
+
+
+
+10%
+    Utwórz plik wnioski.txt zawierający wyniki (wraz z wnioskami) następujących sprawdzań:
+
+    - Sprawdzić, że potoki nazwane działają dla niezależnych procesów — utworzyć potok
+        z linii komend, a następnie uruchomić Producenta i Konsumenta w różnych terminalach.
+        Dodatkowo należy napisać program, który tworzy potok nazwany, a następnie uruchamia
+        program Konsumenta i pięciu Producentów (z różnymi argumentami).
+
+    - Sprawdź, dla trzech istotnie różnych wartości N (np. dla N = 5, N > PIPE_BUF), następujące przypadki:
+        - wielu producentów, jeden konsument
+        - jeden producenta, wielu konsumentów
+        - wielu producentów, wielu konsumentów
+
+
+    Uwagi:
+
+    Ponieważ, w tym przypadku kilka procesów będzie zapisywać do jednego, wspólnego pliku, dlatego należy użyć funkcji flock()
+
+    Należy napisać program lub skrypt sprawdzający, czy zawartość pliku wejściowego, w całości, pojawiła się
+    w odpowiedniej linii pliku wynikowego
+
+    Uruchamianie powyższych przypadków testowych oraz programu/skryptu sprawdzającego  ma się odbywać za pomocą komendy make test

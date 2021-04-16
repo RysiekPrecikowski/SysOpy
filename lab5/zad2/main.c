@@ -26,9 +26,9 @@ void list(int list_mode){
     char path[100];
 
     if (list_mode == LIST_DATE)
-        fp = popen("echo | mail | tail -n +2| head -n -2 | tac ", "r");
+        fp = popen("echo | mail | tail -n +2 | head -n -2 | tac ", "r");
     else if(list_mode == LIST_SENDER)
-        fp = popen("echo | mail | tail -n +2| head -n -2 | sort -u -k2", "r");
+        fp = popen("echo | mail | tail -n +2 | head -n -2 | sort -u -k2", "r");
     else
         exit(-4);
     while (fgets(path, 100, fp) != NULL)

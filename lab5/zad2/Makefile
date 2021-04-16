@@ -2,9 +2,9 @@ CC = gcc
 CFLAGS = -Wall -std=gnu11 -g
 
 run: compile
-	./main Rysiek test_programu jebac_sysopy
+	./main Rysiek test_programu Testowa_wiadomosc
 	./main sender
-	./main sender
+	./main date
 clean:
 	rm -f *.o *.a *.so main
 

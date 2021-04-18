@@ -56,7 +56,7 @@ char *copy_string(char *str) {
     return res;
 }
 
-#define string_to_int(n) atoi(n)
+#define string_to_int(str) atoi(str)
 
 int get_first_int(char *text) {
     int number;
@@ -68,6 +68,6 @@ int get_first_int(char *text) {
     return INT_MAX;
 }
 
-#define blank '_'
+#define blank ' '
 #define LINEMAXLEN 128
 #endif //SYSOPY_UTILS_H

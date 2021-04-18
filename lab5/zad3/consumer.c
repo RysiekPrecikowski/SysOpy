@@ -21,7 +21,6 @@ void append_line(int line, FILE* fp, char* text) {
     flock(fileno(fp), LOCK_EX);
 
     while (fgets(buff, LINEMAXLEN + 1, fp) != NULL){
-
         if (counter == line) {
             for___(LINEMAXLEN, i){
                 if (buff[i] == blank)

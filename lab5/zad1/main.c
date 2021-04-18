@@ -126,7 +126,7 @@ commands_container *prepare_commands(FILE *fp) {
     char *line = NULL;
     size_t len = 0;
 
-    while (read = getline(&line, &len, fp) > 1) {
+    while (getline(&line, &len, fp) > 1) {
         res->commands[res->n] = read_command(line);
         res->n += 1;
     }

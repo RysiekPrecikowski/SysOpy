@@ -113,7 +113,7 @@ void got_connect(message *m) {
     message to_send = {.mtype = CONNECT, .sender_id = SERVER_ID};
 
     for_i(2) {
-        to_send.queue = clients_q[connect_inds[i]];
+        to_send.queue = clients_q[connect_inds[(i + 1)%2]];
         send_message(clients_q[connect_inds[i]], to_send, 0);
         *connect_statuses[i] = BUSY;
     }
@@ -150,6 +150,7 @@ int main(void){
 //    atexit(close_server_queue);
 
     server_queue = create_queue(HOME, ID, IPC_CREAT |  0666);
+    print("SERVER QUEUE IN SERVER: %d", server_queue);
     set_array(clients_status, MAX_CLIENTS, NOT_CONNECTED);
 
     bool testing = true;

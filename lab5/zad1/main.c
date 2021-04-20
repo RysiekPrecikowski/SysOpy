@@ -155,6 +155,7 @@ void pipe_end(int out[2], int in[2]) {
     dup2(in[0], STDIN_FILENO);
 }
 
+
 void swap_pipes(int out[2], int in[2]) {
     close(in[1]);
     in[0] = out[0];
@@ -183,6 +184,8 @@ void execute_one_command(commands_container *com) {
                 } else {
                     pipe_mid(out, in);
                 }
+                printf("COMMAND \n");
+                print_small_command(curr);
 
                 execvp(curr->program, curr->args);
             }

@@ -5,5 +5,3 @@ command3 = ping -c 5 google.com
 command4 = ls -al
 
 command4 | command2
-command1
-command3 | command2

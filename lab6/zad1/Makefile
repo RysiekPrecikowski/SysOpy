@@ -7,9 +7,11 @@ run: compile
 
 
 server:
+	$(CC) $(CFLAGS) server.c -o server
 	./server
 
-client: compile
+client:
+	$(CC) $(CFLAGS) client.c -o client -lncurses
 	./client
 
 clean:

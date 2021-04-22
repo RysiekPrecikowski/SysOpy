@@ -1,5 +1,7 @@
 #include "my_messages.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
 int clients_q[MAX_CLIENTS];
 int clients_status[MAX_CLIENTS];
 int clients_ids[MAX_CLIENTS];
@@ -7,11 +9,22 @@ int clients_counter = 0;
 
 int server_queue;
 
-void close_server_queue(){
+void close_server(){
+    for_i(MAX_CLIENTS){
+        if (clients_status[i] != NOT_CONNECTED){
+            message to_send = {.mtype = STOP, .sender_id = SERVER_ID};
+            send_message(clients_q[i], to_send, 0);
+            print("SENT STOP TO CLIENT ind: %d, id: %d", i, clients_ids[i]);
+
+            message received;
+            receive_message(server_queue, STOP, received);
+            print("RECEIVED STOP FROM CLIENT");
+        }
+    }
+
     close_queue(server_queue);
 }
 void handle_sigint(){
-    close_server_queue();
     eprint("exiting SIGINT");
     exit(0);
 }
@@ -54,8 +67,12 @@ void got_stop(message *m){
     if (client_ind == NO_SUCH_ID){
         eprint("WRONG ID index: %d", client_ind);
     }
-
+//    close_queue(clients_q[client_ind]);
     clients_status[client_ind] = NOT_CONNECTED;
+
+    message to_send = {.mtype = STOP, .sender_id = SERVER_ID};
+    print("SENDING STOP TO CLIENT")
+    send_message(clients_q[client_ind], to_send, 0);
 }
 
 void got_disconnect(message *m){
@@ -143,64 +160,20 @@ void got_init(message *m){
 }
 
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
+
 int main(void){
     signal(SIGINT, handle_sigint);
-//    atexit(close_server_queue);
+    atexit(close_server);
 
-    server_queue = create_queue(HOME, ID, IPC_CREAT |  0666);
-    print("SERVER QUEUE IN SERVER: %d", server_queue);
+    server_queue = create_queue(HOME, ID, IPC_CREAT  |  0666);
+    print("SERVER QUEUE: %d", server_queue);
     set_array(clients_status, MAX_CLIENTS, NOT_CONNECTED);
 
-    bool testing = true;
-    testing = false;
-    if (testing) {
-        message test = {.mtype = INIT, .queue = 666};
-        send_message(server_queue, test, 0);
-        test.queue = 555;
-        send_message(server_queue, test, 0);
-
-        test.mtype = LIST;
-        send_message(server_queue, test, 0);
-
-        test.mtype = CONNECT;
-        test.sender_id = 0;
-        test.client_id = 1;
-        send_message(server_queue, test, 0);
-
-        test.mtype = LIST;
-        send_message(server_queue, test, 0);
-
-
-        test.mtype = DISCONNECT;
-        test.sender_id = 0;
-        send_message(server_queue, test, 0);
-
-        test.mtype = LIST;
-        send_message(server_queue, test, 0);
-
-        test.mtype = STOP;
-        test.sender_id = 1;
-        send_message(server_queue, test, 0);
-
-        test.mtype = LIST;
-        send_message(server_queue, test, 0);
-
-        test.mtype = INIT;
-        test.queue = 444;
-        send_message(server_queue, test, 0);
-
-        test.mtype = LIST;
-        send_message(server_queue, test, 0);
-
-    }
     message received;
 
-
     while (true){
-        receive_message(server_queue, 0, &received); //teraz zwykla kolejka
-//        receive_message(server_queue, -ALL_TYPES, &received); //TODO chyba tak ma byc
+        receive_message(server_queue, 0, received);
+
 
         switch (received.mtype) {
             case STOP:
@@ -225,4 +198,5 @@ int main(void){
 
     return 0;
 }
+
 #pragma clang diagnostic pop

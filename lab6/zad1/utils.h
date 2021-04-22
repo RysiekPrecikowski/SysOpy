@@ -29,6 +29,7 @@
 #define sleep_seconds(n) usleep(n * 1000 * 1000)
 
 
+
 /// PROCESSES
 #define exec(program, args...) \
         if(fork() == 0) \
@@ -60,7 +61,9 @@ char *copy_string(char *str) {
     return res;
 }
 
+
 #define string_to_int(str) atoi(str)
+
 
 int get_first_int(char *text) {
     int number;

@@ -18,22 +18,23 @@ void append_line(int line, FILE* fp, char* text) {
     char buff[LINEMAXLEN +1];
     int counter = 0, i;
 
-    flock(fileno(fp), LOCK_EX);
-
     while (fgets(buff, LINEMAXLEN + 1, fp) != NULL){
         if (counter == line) {
             for___(LINEMAXLEN, i){
                 if (buff[i] == blank)
                     break;
             }
+            flock(fileno(fp), LOCK_EX);
+
             fseek(fp, (counter)*LINEMAXLEN + i, SEEK_SET);
             fputs(text, fp);
             fflush(fp);
+
+            flock(fileno(fp), LOCK_UN);
             break;
         }
         counter++;
     }
-    flock(fileno(fp), LOCK_UN);
 }
 
 int main(int argc, char* argv[]){

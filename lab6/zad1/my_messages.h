@@ -21,7 +21,6 @@
 #include "utils.h"
 
 
-
 enum TYPES {
     STOP = 1, INIT, DISCONNECT, CONNECT, LIST, CHAT, ALL_TYPES
 };
@@ -83,8 +82,8 @@ void close_queue(int q) {
     msgctl(q, IPC_RMID, NULL);
 }
 
-#define send_message(queue, m, flags) { \
-if (msgsnd(queue, &m, message_size, flags) == -1){ \
+#define send_message(queue, m) { \
+if (msgsnd(queue, &m, message_size, 0) == -1){ \
     eprint("cannot send message, errno: %s", strerror(errno));}}
 
 #define receive_message_NOWAIT(queue, mtype, message) { \

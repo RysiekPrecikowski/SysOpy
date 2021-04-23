@@ -7,8 +7,11 @@
 int server_queue;
 int client_queue;
 int client_id;
+char* initial_id;
 int second_client_queue;
+char* second_client_path;
 bool chat_mode = false;
+unsigned int priority;
 
 void close_client_queue(){
     close_queue(client_queue);
@@ -19,8 +22,8 @@ void stop(){
     message m = {.mtype = STOP, .sender_id = client_id};
     send_message(server_queue, m);
 
-    receive_message(client_queue, STOP, m);
-    print("RECEIVED STOP");
+//    receive_message(client_queue, STOP, m);
+//    print("RECEIVED STOP");
 
     exit(0);
 }
@@ -42,12 +45,19 @@ void got_stop(message* m){
 
 void init(){
     message m = {.mtype = INIT, .queue = client_queue};
+    sprintf(m.message, "%s", get_client_path(initial_id));
     send_message(server_queue, m);
     print("SENDING INIT");
 
-    receive_message(client_queue, INIT, m);
+
+    message received;
+    priority = -1;
+    while (priority != INIT )
+        receive_message(client_queue, priority, received);
     print("RECEIVED MESSAGE")
-    client_id = m.client_id;
+    print("PRIORITY %d", priority);
+//    TODO check if init?
+    client_id = received.client_id;
     print("CLIENT ID: %d", client_id);
 }
 
@@ -61,14 +71,18 @@ void connect(int connect_to_id){
 
 void got_connect(message *m){
     second_client_queue = m->queue;
-
+    second_client_path = m->message;
     print("SECOND CLIENT QUEUE: %d", second_client_queue);
+    print("SECOND CLIENT PATH: %s", second_client_path);
+
+    second_client_queue = mq_open(second_client_path, O_WRONLY);
     chat_mode = true;
 }
 
 void disconnect(){
     if (not chat_mode){
         print("U ARE NOT CONNECTED LOL")
+        return;
     }
     message m = {.mtype = DISCONNECT, .sender_id = client_id};
     send_message(server_queue, m);
@@ -117,15 +131,16 @@ void send_chat(){
 
 int read_from_user(int*);
 
-int main(void){
+int main(int argc, char* argv[]){
+    initial_id = argv[1];
     signal(SIGINT, handle_sigint);
 
     atexit(close_client_queue);
 
-    server_queue = create_queue(HOME, ID, 0);
+    server_queue = open_server_queue();
     print("server queue %d", server_queue);
 
-    client_queue = create_queue(HOME, CLIENT_ID, IPC_CREAT | IPC_EXCL |  0666);
+    client_queue = create_client_queue(initial_id);
     print("client queue %d", client_queue);
     if(client_queue == -1){
         exit(-1);
@@ -134,6 +149,7 @@ int main(void){
     init();
 
     message received;
+
     int connect_to_id;
 
     while (true){
@@ -156,8 +172,9 @@ int main(void){
             default:
                 break;
         }
-
-        receive_message_NOWAIT(client_queue, 0, received);
+//        print("waiting")
+        receive_message_NOWAIT(client_queue, priority, received);
+//        print("end of waiting")
 
         switch (received.mtype) {
             case STOP:
@@ -181,6 +198,7 @@ int main(void){
     }
 
     return 0;
+    //TODO USUWANIE KOLEJKI PRZY WYJSCIU Z PROGRAMU< SZCZEGOLNI W SERWERZE
 }
 
 int read_from_user(int *id){

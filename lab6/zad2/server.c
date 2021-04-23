@@ -4,6 +4,7 @@
 #pragma ide diagnostic ignored "EndlessLoop"
 int clients_q[MAX_CLIENTS];
 int clients_status[MAX_CLIENTS];
+char clients_paths[MAX_CLIENTS][MAX_MESSAGE_LEN];
 int clients_ids[MAX_CLIENTS];
 int clients_counter = 0;
 
@@ -16,9 +17,9 @@ void close_server(){
             send_message(clients_q[i], to_send);
             print("SENT STOP TO CLIENT ind: %d, id: %d", i, clients_ids[i]);
 
-            message received;
-            receive_message(server_queue, STOP, received);
-            print("RECEIVED STOP FROM CLIENT");
+//            message received;
+//            receive_message(server_queue, STOP, received);
+//            print("RECEIVED STOP FROM CLIENT");
         }
     }
 
@@ -122,13 +123,16 @@ void got_connect(message *m) {
 
     if (*connect_statuses[0] != READY or *connect_statuses[1] != READY){
         eprint("CLIENT IS BUSY!! statuses: %s %s", status_to_str(*connect_statuses[0])
-                                                 , status_to_str(*connect_statuses[1]));
+        , status_to_str(*connect_statuses[1]));
     }
 
     message to_send = {.mtype = CONNECT, .sender_id = SERVER_ID};
 
     for_i(2) {
         to_send.queue = clients_q[connect_inds[(i + 1)%2]];
+        print("SENDING PATH: %s", clients_paths[connect_inds[(i+1) %2]])
+        sprintf(to_send.message, "%s", clients_paths[connect_inds[(i+1) %2]]);
+
         send_message(clients_q[connect_inds[i]], to_send);
         *connect_statuses[i] = BUSY;
     }
@@ -142,15 +146,21 @@ void got_init(message *m){
         eprint("not enough space in server");
     }
     int client_id = clients_counter;
-    int client_queue = m->queue;
+    int client_queue = mq_open(m->message, O_WRONLY);
+    print("OPENED QUEUE %d", client_queue)
 
     clients_q[client_ind] = client_queue;
     clients_status[client_ind] = READY;
     clients_ids[client_ind] = client_id;
+//    clients_paths[client_ind] = m->message;
+    sprintf(clients_paths[client_ind], "%s", m->message);
+
+    print("sending init to client, %s", m->message);
 
     message to_client_message = {.mtype = INIT,
-                                 .sender_id = SERVER_ID,
-                                 .client_id = client_id};
+            .sender_id = SERVER_ID,
+            .client_id = client_id};
+
 
     send_message(client_queue, to_client_message);
 
@@ -163,14 +173,15 @@ int main(void){
     signal(SIGINT, handle_sigint);
     atexit(close_server);
 
-    server_queue = create_queue(HOME, ID, IPC_CREAT  |  0666);
+    server_queue = create_server_queue();
     print("SERVER QUEUE: %d", server_queue);
     set_array(clients_status, MAX_CLIENTS, NOT_CONNECTED);
 
     message received;
+    int priority = 0;
 
     while (true){
-        receive_message(server_queue, 0, received);
+        receive_message(server_queue, priority, received);
 
         switch (received.mtype) {
             case STOP:

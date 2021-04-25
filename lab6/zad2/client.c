@@ -11,7 +11,8 @@ char* initial_id;
 int second_client_queue;
 char* second_client_path;
 bool chat_mode = false;
-unsigned int priority;
+unsigned int priority = ALL_TYPES;
+message received;
 
 void close_client_queue(){
     close_queue(client_queue);
@@ -22,9 +23,8 @@ void stop(){
     message m = {.mtype = STOP, .sender_id = client_id};
     send_message(server_queue, m);
 
-//    receive_message(client_queue, STOP, m);
-//    print("RECEIVED STOP");
-
+    close_queue(server_queue);
+    close_and_delete_queue(client_queue, get_client_path(initial_id));
     exit(0);
 }
 
@@ -43,20 +43,18 @@ void got_stop(message* m){
     exit(0);
 }
 
-void init(){
+void init() {
     message m = {.mtype = INIT, .queue = client_queue};
     sprintf(m.message, "%s", get_client_path(initial_id));
     send_message(server_queue, m);
     print("SENDING INIT");
 
+    print("QUEUE %d path %s", client_queue, get_client_path(initial_id));
 
-    message received;
-    priority = -1;
-    while (priority != INIT )
+    while (priority != INIT) {
         receive_message(client_queue, priority, received);
+    }
     print("RECEIVED MESSAGE")
-    print("PRIORITY %d", priority);
-//    TODO check if init?
     client_id = received.client_id;
     print("CLIENT ID: %d", client_id);
 }
@@ -70,12 +68,11 @@ void connect(int connect_to_id){
 }
 
 void got_connect(message *m){
-    second_client_queue = m->queue;
     second_client_path = m->message;
     print("SECOND CLIENT QUEUE: %d", second_client_queue);
     print("SECOND CLIENT PATH: %s", second_client_path);
 
-    second_client_queue = mq_open(second_client_path, O_WRONLY);
+    second_client_queue = open_client_queue(second_client_path);
     chat_mode = true;
 }
 
@@ -132,7 +129,12 @@ void send_chat(){
 int read_from_user(int*);
 
 int main(int argc, char* argv[]){
-    initial_id = argv[1];
+    if (argc == 2){
+        initial_id = argv[1];
+    } else {
+        initial_id = int_to_string(getpid());
+    }
+
     signal(SIGINT, handle_sigint);
 
     atexit(close_client_queue);
@@ -147,8 +149,6 @@ int main(int argc, char* argv[]){
     }
 
     init();
-
-    message received;
 
     int connect_to_id;
 
@@ -172,9 +172,8 @@ int main(int argc, char* argv[]){
             default:
                 break;
         }
-//        print("waiting")
+
         receive_message_NOWAIT(client_queue, priority, received);
-//        print("end of waiting")
 
         switch (received.mtype) {
             case STOP:
@@ -198,7 +197,6 @@ int main(int argc, char* argv[]){
     }
 
     return 0;
-    //TODO USUWANIE KOLEJKI PRZY WYJSCIU Z PROGRAMU< SZCZEGOLNI W SERWERZE
 }
 
 int read_from_user(int *id){

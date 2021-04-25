@@ -10,7 +10,7 @@ server: compile
 	./server
 
 client: compile
-	./client $(ID)
+	./client
 
 clean:
 	rm -f *.o *.a *.so main server client
@@ -18,5 +18,5 @@ clean:
 compile:
 	#make clean
 	$(CC) $(CFLAGS) server.c -o server -lrt
-	$(CC) $(CFLAGS) client.c -o client -lrt -lncurses -fno-stack-protector
+	$(CC) $(CFLAGS) client.c -o client -lrt -lncurses
 

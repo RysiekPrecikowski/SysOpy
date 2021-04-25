@@ -17,13 +17,11 @@ void close_server(){
             send_message(clients_q[i], to_send);
             print("SENT STOP TO CLIENT ind: %d, id: %d", i, clients_ids[i]);
 
-//            message received;
-//            receive_message(server_queue, STOP, received);
-//            print("RECEIVED STOP FROM CLIENT");
+            close_queue(clients_q[i]);
         }
     }
 
-    close_queue(server_queue);
+    close_and_delete_queue(server_queue, SERVER_PATH);
 }
 void handle_sigint(){
     eprint("exiting SIGINT");
@@ -152,7 +150,6 @@ void got_init(message *m){
     clients_q[client_ind] = client_queue;
     clients_status[client_ind] = READY;
     clients_ids[client_ind] = client_id;
-//    clients_paths[client_ind] = m->message;
     sprintf(clients_paths[client_ind], "%s", m->message);
 
     print("sending init to client, %s", m->message);
@@ -178,7 +175,7 @@ int main(void){
     set_array(clients_status, MAX_CLIENTS, NOT_CONNECTED);
 
     message received;
-    int priority = 0;
+    unsigned int priority = 0;
 
     while (true){
         receive_message(server_queue, priority, received);

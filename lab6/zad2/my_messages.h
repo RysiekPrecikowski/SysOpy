@@ -79,7 +79,7 @@ typedef struct {
     char message[MAX_MESSAGE_LEN];
 } message;
 
-#define message_size (sizeof (message) + sizeof(mqd_t) + sizeof (int) + 96)
+#define message_size (sizeof (message))
 
 int create_queue(char* path, int flag, mode_t mode) {
     struct mq_attr attr;
@@ -92,12 +92,11 @@ int create_queue(char* path, int flag, mode_t mode) {
 }
 
 int create_server_queue(){
-    return create_queue((char*)SERVER_PATH, O_CREAT | O_RDWR,0666); //TODO rdonly
+    return create_queue((char*)SERVER_PATH, O_CREAT | O_RDONLY,0666);
 }
 
 int open_server_queue(){
-     //TODO rdonly
-    return mq_open((char*) SERVER_PATH, O_RDWR);
+    return mq_open((char*) SERVER_PATH, O_WRONLY);
 }
 
 char* get_client_path(char* id){
@@ -107,23 +106,28 @@ char* get_client_path(char* id){
 }
 
 int create_client_queue(char* id){
-    char *path = calloc(strlen(CLIENT_PATH) + INTLEN + 1, sizeof (char));
-    sprintf(path, "%s%s", CLIENT_PATH, id);
-    return create_queue(path, O_CREAT | O_RDWR, 0666);
+    return create_queue(get_client_path(id), O_CREAT | O_RDONLY, 0666);
 }
 
-
+int open_client_queue(char* queue_path){
+    return mq_open(queue_path, O_WRONLY);
+}
 
 void close_queue(int q) {
     mq_close(q);
-//    mq_unlink(SERVER_PATH);
+
+}
+
+void close_and_delete_queue(int q, char* path){
+    close_queue(q);
+    mq_unlink(path);
 }
 
 #define send_message(queue, m) { \
 if (mq_send(queue, (char*) &m, message_size, m.mtype) == -1){ \
     eprint("cannot send message, errno: %s", strerror(errno));}}
 
-//TODO
+
 #define receive_message_NOWAIT(queue, mtype, message) { \
 struct timespec tm;\
 clock_gettime(CLOCK_REALTIME, &tm);\

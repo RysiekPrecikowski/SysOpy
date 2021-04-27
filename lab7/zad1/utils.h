@@ -17,8 +17,10 @@
 
 #define dunno "¯\\_(ツ)_/¯"
 
-#define print(args...) {printf(args); printf("\n");}
-#define eprint(args...) {fprintf(stderr, args); fprintf(stderr, "\n");}
+#define print(args...) {printf(args); printf("\n"); fflush(stdout);}
+#define eprint(args...) {fprintf(stderr, args); fprintf(stderr, "\n"); fflush(stderr);fflush(stdout);}
+
+#define my_exit(code) {print("EXITING WITH CODE %d", code); exit(code);}
 
 #define for_i(n) for(int i = 0 ; i < n ; i++)
 #define for___(n, i) for(i = 0 ; i < n ; i++)

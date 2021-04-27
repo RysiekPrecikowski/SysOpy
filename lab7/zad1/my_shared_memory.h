@@ -25,23 +25,23 @@
 
 #define PIZZA_TYPES_COUNT 10
 
-#define PREPARATION_TIME (1)
-#define BAKING_TIME (5)
+#define PREPARATION_TIME (rand() % 2 + 1)
+#define BAKING_TIME (rand() % 3 + 4)
 
 #define COOKS_COUNT 3
 #define DELIVERY_MAN_COUNT 3
 
-#define DELIVERY_TIME (5)
+#define DELIVERY_TIME (rand() % 3 + 4)
 
 #define EMPTY -1
 
 
-#define PROJECT_ID 'I'
+#define PROJECT_ID 'X'
 //#define WORKER_ID ((char) (getpid() % ('}' - '!') + ' '))
 #define HOME getenv("HOME")
 
 
-enum SEMAPHORES {OVEN, TABLE, ALL_SEMAPHORES};
+enum SEMAPHORES {TABLE, OVEN, TABLE_DELIVERY, ALL_SEMAPHORES};
 
 
 typedef struct my_array {
@@ -58,7 +58,8 @@ int size_of_my_arr(my_array *arr){
 
 
 typedef struct {
-    int sem;
+    int sem_cook;
+    int sem_delivery;
     my_array oven;
     my_array table;
 }shared_memory;
@@ -85,14 +86,26 @@ int get_n_semaphores(int n, int flag){
     int key = ftok(HOME, PROJECT_ID);
     int id = semget(key, n, flag);
     if (id == -1){
-        eprint("ERROR WHEN CREATING SEMAPHORE");
+        eprint("ERROR WHEN CREATING SEMAPHORE %s", strerror(errno));
+
     }
     return semget(key, n, flag);
 }
 
+char* semaphore_to_string(int sem){
+    switch (sem) {
+        case OVEN:
+            return (char*) "OVEN";
+        case TABLE:
+            return (char*) "TABLE";
+        case TABLE_DELIVERY:
+            return (char*) "TABLE_DELIVERY";
+    }
+}
+
 int get_semaphore_value(int id, int n){
     int val = semctl(id, n, GETVAL, 0);
-    print("sem %d value: %d", n, val);
+    print("sem %d %s value: %d", n, semaphore_to_string(n), val);
     return val;
 }
 
@@ -130,8 +143,10 @@ void set_my_arr(my_array *arr, int size){
 void add_to_array(my_array *arr, int to_add) {
     if (arr->counter == arr->size) {
         eprint("ARRAY FULL")
+//        my_exit(-1);
     } else if (arr->arr[arr->adding_counter % arr->size] != EMPTY) {
         eprint("ARRAY NOT EMPTY BUT INDEX TAKEN")
+//        my_exit(-2);
     } else {
         arr->arr[arr->adding_counter % arr->size] = to_add;
         arr->adding_counter ++;
@@ -142,10 +157,11 @@ void add_to_array(my_array *arr, int to_add) {
 int take_from_array(my_array *arr){
     if (arr->arr[arr->taking_counter % arr->size] == EMPTY){
         eprint("NO ITEM")
+//        my_exit(-3);
     } else {
         int res = arr->arr[arr->taking_counter % arr->size];
         arr->arr[arr->taking_counter % arr->size] = EMPTY;
-        arr->taking_counter -= 1;
+        arr->taking_counter += 1;
         arr->counter --;
         return res;
     }

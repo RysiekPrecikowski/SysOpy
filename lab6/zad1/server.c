@@ -170,7 +170,7 @@ int main(void){
     message received;
 
     while (true){
-        receive_message(server_queue, 0, received);
+        receive_message(server_queue, -ALL_TYPES, received);
 
         switch (received.mtype) {
             case STOP:

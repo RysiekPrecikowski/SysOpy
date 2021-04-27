@@ -157,7 +157,7 @@ int main(void){
                 break;
         }
 
-        receive_message_NOWAIT(client_queue, 0, received);
+        receive_message_NOWAIT(client_queue, -ALL_TYPES, received);
 
         switch (received.mtype) {
             case STOP:

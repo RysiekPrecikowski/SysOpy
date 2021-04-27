@@ -36,6 +36,7 @@ int main(int argc, char* argv[]){
     char *to_send_buff = calloc(sent_size, sizeof (char));
 
     while (fread(buff, sizeof (char ), n, in_fp) > 0){
+        print("%d %s", getpid(), buff);
         to_send(buff, row, to_send_buff);
         fwrite(to_send_buff, sizeof(char), sent_size , pipe);
         fflush(pipe);

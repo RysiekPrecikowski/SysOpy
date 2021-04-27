@@ -46,8 +46,10 @@ int main(int argc, char* argv[]){
     if (argc == 1){
         mkfifo(pipe_path, 0666);
         exec("./consumer", pipe_path, consumer_out_path, int_to_string(consumer_read));
-        prepare_out(amount_of_producers, consumer_out_path);
+        prepare_out(amount_of_producers + 1, consumer_out_path);
         exec("./producer", pipe_path, int_to_string(0), "0", int_to_string(producer_n));
+        exec("./producer", pipe_path, int_to_string(1), "1", int_to_string(producer_n));
+
     }
 
     char *arg;

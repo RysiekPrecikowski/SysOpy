@@ -19,8 +19,6 @@
 
 #include "utils.h"
 
-enum SHARED_MEMORY_INDEXES {OVEN, TABLE};
-
 #define MAX_OVEN_PIZZAS 5
 #define MAX_TABLE_PIZZAS 5
 #define MAX_PIZZAS (MAX_OVEN_PIZZAS > MAX_TABLE_PIZZAS ? MAX_OVEN_PIZZAS : MAX_TABLE_PIZZAS)
@@ -43,7 +41,7 @@ enum SHARED_MEMORY_INDEXES {OVEN, TABLE};
 #define HOME getenv("HOME")
 
 
-
+enum SEMAPHORES {OVEN, TABLE, ALL_SEMAPHORES};
 
 
 typedef struct my_array {
@@ -60,6 +58,7 @@ int size_of_my_arr(my_array *arr){
 
 
 typedef struct {
+    int sem;
     my_array oven;
     my_array table;
 }shared_memory;
@@ -73,12 +72,14 @@ shared_memory* set_up_shared_memory(int flag_get, int flag_mat, int* shared_memo
     int key = ftok(HOME, PROJECT_ID);
     *shared_memory_id = shmget(key, size_of_memory, flag_get);
     if (*shared_memory_id == -1){
-        eprint("%s", strerror(errno))
+        eprint("ERROR IN SET UP SHARED MEMORY %s", strerror(errno))
     }
     return (shared_memory*) shmat(*shared_memory_id, NULL, flag_mat);
 }
 
-
+void delete_shared_memory(int id){
+    shmctl(id, IPC_RMID, NULL);
+}
 
 int get_n_semaphores(int n, int flag){
     int key = ftok(HOME, PROJECT_ID);
@@ -104,7 +105,7 @@ void change_semaphore_value(int id, int n, int diff){
         eprint("DUDE DIFF CANNOT BE 0")
     struct sembuf sembuf = {.sem_num = n, .sem_op = diff};
     semop(id, &sembuf, 1);
-    print("value changed diff %d", diff);
+//    print("value changed diff %d", diff);
 }
 
 void delete_semaphore(int id){
@@ -149,6 +150,15 @@ int take_from_array(my_array *arr){
         return res;
     }
     return -1;
+}
+
+
+void wait_my_array_not_empty(my_array *arr){
+    while (arr->counter == 0);
+}
+
+void wait_my_array_not_full(my_array *arr){
+    while (arr->size == arr->counter);
 }
 
 void print_my_array(my_array *arr){

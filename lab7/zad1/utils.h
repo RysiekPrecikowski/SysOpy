@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <limits.h>
+#include <time.h>
+#include <inttypes.h>
+#include <sys/time.h>
 
 #define and &&
 #define or ||
@@ -81,5 +84,39 @@ int get_first_int(char *text) {
 
 #define print_array(arr, size, format){for_i(size) printf(format, arr[i]); printf("\n");}
 
+
+
+void print_current_time(){
+//    time_t rawtime;
+//    struct tm * timeinfo;
+//
+//    time ( &rawtime );
+//    timeinfo = localtime ( &rawtime );
+//    printf ( "CURRENT TIME: %s", asctime (timeinfo) );
+
+
+
+
+
+//    struct timespec now;
+//    timespec_get(&now, TIME_UTC);
+//    int64_t mil = ((int64_t) now.tv_sec) * 1000 + ((int64_t) now.tv_nsec) / 1000000;
+//    print("%" PRId64 "\n", mil)
+
+
+
+    struct timeval curTime;
+    gettimeofday(&curTime, NULL);
+    int milli = curTime.tv_usec / 1000;
+
+    char buffer [80];
+    strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
+
+    char currentTime[84] = "";
+    sprintf(currentTime, "%s:%03d", buffer, milli);
+    printf("current time: %s \n", currentTime);
+
+    print(" ");
+}
 
 #endif //SYSOPY_UTILS_H

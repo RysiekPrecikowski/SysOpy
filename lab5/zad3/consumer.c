@@ -54,6 +54,7 @@ int main(int argc, char* argv[]){
     check_null(out_fp);
 
     while (fread(buff, sizeof (char ), n , pipe_fp) == n){
+        print("%s", buff);
         int line = get_first_int(buff);
 
         strtok(buff, "-:");

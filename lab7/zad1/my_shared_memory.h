@@ -41,7 +41,7 @@
 #define HOME getenv("HOME")
 
 
-enum SEMAPHORES {TABLE, OVEN, TABLE_DELIVERY, ALL_SEMAPHORES};
+enum SEMAPHORES {TABLE, OVEN, TABLE_DELIVERY_TAKE, TABLE_DELIVERY_PUT, ALL_SEMAPHORES};
 
 
 typedef struct my_array {
@@ -58,8 +58,7 @@ int size_of_my_arr(my_array *arr){
 
 
 typedef struct {
-    int sem_cook;
-    int sem_delivery;
+    int sem;
     my_array oven;
     my_array table;
 }shared_memory;
@@ -89,7 +88,7 @@ int get_n_semaphores(int n, int flag){
         eprint("ERROR WHEN CREATING SEMAPHORE %s", strerror(errno));
 
     }
-    return semget(key, n, flag);
+    return id;
 }
 
 char* semaphore_to_string(int sem){
@@ -98,9 +97,12 @@ char* semaphore_to_string(int sem){
             return (char*) "OVEN";
         case TABLE:
             return (char*) "TABLE";
-        case TABLE_DELIVERY:
-            return (char*) "TABLE_DELIVERY";
+        case TABLE_DELIVERY_PUT:
+            return (char*) "TABLE_DELIVERY_PUT";
+        case TABLE_DELIVERY_TAKE:
+            return (char*) "TABLE_DELIVERY_TAKE";
     }
+    return NULL;
 }
 
 int get_semaphore_value(int id, int n){

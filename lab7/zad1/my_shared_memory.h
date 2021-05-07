@@ -27,17 +27,17 @@
 
 #define PREPARATION_TIME (rand() % 2 + 1)
 #define BAKING_TIME (rand() % 3 + 4)
-
-#define COOKS_COUNT 3
-#define DELIVERY_MAN_COUNT 3
-
 #define DELIVERY_TIME (rand() % 3 + 4)
 
-#define EMPTY -1
+#define EMPTY (-1)
 
+#define LOCKED (-1)
+#define UNLOCKED 1
+
+#define ADD_PIZZA 1
+#define TAKE_PIZZA (-1)
 
 #define PROJECT_ID 'X'
-//#define WORKER_ID ((char) (getpid() % ('}' - '!') + ' '))
 #define HOME getenv("HOME")
 
 
@@ -181,7 +181,12 @@ void wait_my_array_not_full(my_array *arr){
 
 void print_my_array(my_array *arr){
     print("taken: %d / %d", arr->counter, arr->size);
-    print_array(arr->arr, arr->size, "%d ");
+//    print_array(arr->arr, arr->size, "%d ");
+
+    for_i(arr->counter){
+        printf("%d ", arr->arr[(arr->taking_counter + i) % arr->size]);
+    }
+    printf("\n");
 }
 
 

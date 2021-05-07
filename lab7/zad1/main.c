@@ -25,8 +25,8 @@ int main(void){
 
     sharedMemory->sem = get_n_semaphores(ALL_SEMAPHORES ,IPC_CREAT | 0666);
     sem = sharedMemory->sem;
-    set_semaphore_value(sem, OVEN, 0);
-    set_semaphore_value(sem, TABLE, 0);
+    set_semaphore_value(sem, OVEN, UNLOCKED);
+    set_semaphore_value(sem, TABLE, UNLOCKED);
     set_semaphore_value(sem, TABLE_DELIVERY_TAKE, 0);
     set_semaphore_value(sem, TABLE_DELIVERY_PUT, MAX_TABLE_PIZZAS);
 

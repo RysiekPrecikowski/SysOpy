@@ -37,7 +37,6 @@ int main(int argc, char* argv[]) {
     int child = fork();
     if(child == 0) {
         sleep(1);
-
     }
     else {
         //wyslij do procesu potomnego sygnal przekazany jako argv[2]

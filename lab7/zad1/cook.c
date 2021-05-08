@@ -41,7 +41,7 @@ int main(int argc, string argv[]){
         change_semaphore_value(sem, OVEN, UNLOCKED);
 
 
-        change_semaphore_value(sem, TABLE_DELIVERY_PUT, TAKE_PIZZA);
+        change_semaphore_value(sem, TABLE_DELIVERY_PUT, TAKE_PIZZA); //zabieram jedno miejsce "do polozenia"
         change_semaphore_value(sem, TABLE, LOCKED);
 
         print("%d is placing pizza %d on table", getpid(), taken_pizza);
@@ -49,7 +49,7 @@ int main(int argc, string argv[]){
         add_to_array(table, taken_pizza);
 
         change_semaphore_value(sem, TABLE, UNLOCKED);
-        change_semaphore_value(sem, TABLE_DELIVERY_TAKE, ADD_PIZZA);
+        change_semaphore_value(sem, TABLE_DELIVERY_TAKE, ADD_PIZZA); // dodaje jedna pizze "do zabrania"
 
     }
 

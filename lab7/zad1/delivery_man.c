@@ -17,7 +17,7 @@ int main(int argc, string argv[]){
 
     while (true){
 
-        change_semaphore_value(sem, TABLE_DELIVERY_TAKE, TAKE_PIZZA);
+        change_semaphore_value(sem, TABLE_DELIVERY_TAKE, TAKE_PIZZA); // zabieram miejsce z "do zabrania"
         change_semaphore_value(sem, TABLE, LOCKED);
 
         print("OVEN")
@@ -30,7 +30,7 @@ int main(int argc, string argv[]){
         print_current_time();
 
         change_semaphore_value(sem, TABLE, UNLOCKED);
-        change_semaphore_value(sem, TABLE_DELIVERY_PUT, ADD_PIZZA);
+        change_semaphore_value(sem, TABLE_DELIVERY_PUT, ADD_PIZZA); // dodaje jedno miejsce "do polozenia"
 
 
         sleep_seconds(DELIVERY_TIME);

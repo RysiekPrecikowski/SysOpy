@@ -3,13 +3,14 @@
 sem_t **sem;
 int shared_memory_id;
 shared_memory *sharedMemory;
+
+
 void bye(){
     close_shared_memory(sharedMemory);
     delete_shared_memory();
     close_semaphores(sem);
     delete_semaphores();
 }
-
 
 int main(void){
     signal(SIGINT, handle_sigint);
@@ -18,7 +19,7 @@ int main(void){
     my_array *table;
     my_array *oven;
 
-     sharedMemory = set_up_shared_memory(O_CREAT | O_RDWR, PROT_READ | PROT_WRITE);
+    sharedMemory = set_up_shared_memory(O_CREAT | O_RDWR, PROT_READ | PROT_WRITE);
 
     table = &sharedMemory->table;
     oven = &sharedMemory->oven;

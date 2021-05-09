@@ -2,21 +2,25 @@
 
 int sem;
 int shared_memory_id;
+shared_memory *sharedMemory;
 
 void bye(){
+    detach_shared_memory(sharedMemory);
     delete_shared_memory(shared_memory_id);
     delete_semaphore(sem);
 }
 
+
+
 int main(void){
     atexit(bye);
+    signal(SIGINT, handle_sigint);
 
     my_array *table;
     my_array *oven;
 
-    shared_memory *sharedMemory =
-            set_up_shared_memory(IPC_CREAT | 0666, 0666,
-                                 &shared_memory_id, SIZE_OF_SHARED_MEMORY);
+    sharedMemory = set_up_shared_memory(IPC_CREAT | 0666, 0666,
+                                        &shared_memory_id, SIZE_OF_SHARED_MEMORY);
 
     table = &sharedMemory->table;
     oven = &sharedMemory->oven;

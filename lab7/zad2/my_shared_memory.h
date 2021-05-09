@@ -77,7 +77,14 @@ shared_memory* set_up_shared_memory(int flag_open, int flag_map){
 }
 
 void delete_shared_memory(){
-    shm_unlink(SH_NAME);
+    if (shm_unlink(SH_NAME) == -1) {
+        eprint("ERROR IN UNLINKING MEMORY");
+    }
+}
+
+void close_shared_memory(shared_memory *sharedMemory){
+    if (munmap(sharedMemory, SIZE_OF_SHARED_MEMORY) == -1)
+        eprint("ERROR IN UNMAPPING");
 }
 
 char* get_sem_path(int sem){
@@ -145,9 +152,22 @@ void change_semaphore_value(sem_t *sem[ALL_SEMAPHORES], int n, int diff){
 
 void delete_semaphores(){
     for_i(ALL_SEMAPHORES){
-//        print("unlink %d", i);
-        sem_unlink(get_sem_path(i));
+        if (sem_unlink(get_sem_path(i)) == -1){
+            eprint("ERROR IN UNLINKING SEMAPHORE");
+        }
     }
 }
 
+void close_semaphores(sem_t** semaphores){
+    for_i(ALL_SEMAPHORES){
+        if(sem_close(semaphores[i]) == -1){
+            eprint("ERROR IN CLOSING SEMAPHORE, %s", strerror(errno));
+        }
+    }
+}
+
+
+void handle_sigint(int sig){
+    exit(-1);
+}
 #endif //SYSOPY_MY_SHARED_MEMORY_H

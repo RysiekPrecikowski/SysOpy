@@ -3,12 +3,21 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
 
+int sem;
+int shared_memory_id;
+shared_memory *sharedMemory;
+
+void bye(){
+    detach_shared_memory(sharedMemory);
+}
+
 int main(int argc, string argv[]){
-    int shared_memory_id;
-    shared_memory *sharedMemory =
-            set_up_shared_memory( 0666, 0666,
-                                  &shared_memory_id, 0);
-    int sem = get_n_semaphores(ALL_SEMAPHORES, 0666);
+    atexit(bye);
+    signal(SIGINT, handle_sigint);
+
+    sharedMemory = set_up_shared_memory( 0666, 0666,
+                                         &shared_memory_id, 0);
+    sem = get_n_semaphores(ALL_SEMAPHORES, 0666);
 
     my_array *table = &sharedMemory->table;
     my_array *oven = &sharedMemory->oven;

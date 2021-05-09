@@ -56,6 +56,12 @@ void delete_shared_memory(int id){
     shmctl(id, IPC_RMID, NULL);
 }
 
+void detach_shared_memory(shared_memory* sharedMemory){
+    if (shmdt(sharedMemory) == -1){
+        eprint("ERROR IN DETACHING SHARED MEMORY");
+    }
+}
+
 int get_n_semaphores(int n, int flag){
     int key = ftok(HOME, PROJECT_ID);
     int id = semget(key, n, flag);
@@ -105,6 +111,10 @@ void delete_semaphore(int id){
 void wait_semaphore_0(int id, int n){
     struct sembuf sembuf = {.sem_num = n, .sem_op = 0};
     semop(id, &sembuf, 1);
+}
+
+void handle_sigint(int sig){
+    exit(-1);
 }
 
 #endif //SYSOPY_MY_SHARED_MEMORY_H

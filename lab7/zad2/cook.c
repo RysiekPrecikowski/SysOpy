@@ -4,16 +4,18 @@
 #pragma ide diagnostic ignored "EndlessLoop"
 
 int main(int argc, string argv[]){
-    int shared_memory_id;
     shared_memory *sharedMemory =
-            set_up_shared_memory( 0666, 0666,
-                                  &shared_memory_id, 0);
-    int sem = get_n_semaphores(ALL_SEMAPHORES, 0666);
+            set_up_shared_memory(O_RDWR, PROT_READ | PROT_WRITE);
+    sem_t** sem = get_semaphores();
 
     my_array *table = &sharedMemory->table;
     my_array *oven = &sharedMemory->oven;
 
     srand(getpid() * time(NULL));
+
+
+//    print("TABLE SIZE %d", table->size);
+//    print_my_array(table);
 
     while (true){
 

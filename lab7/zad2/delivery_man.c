@@ -4,11 +4,9 @@
 #pragma ide diagnostic ignored "EndlessLoop"
 
 int main(int argc, string argv[]){
-    int shared_memory_id;
     shared_memory *sharedMemory =
-            set_up_shared_memory( 0666, 0666,
-                                  &shared_memory_id, 0);
-    int sem = get_n_semaphores(ALL_SEMAPHORES, 0666);
+            set_up_shared_memory(O_RDWR, PROT_READ | PROT_WRITE);
+    sem_t** sem = get_semaphores();
 
     my_array *table = &sharedMemory->table;
     my_array *oven = &sharedMemory->oven;
@@ -16,7 +14,6 @@ int main(int argc, string argv[]){
     srand(getpid() * time(NULL));
 
     while (true){
-
         change_semaphore_value(sem, TABLE_DELIVERY_TAKE, TAKE_PIZZA); // zabieram miejsce z "do zabrania"
         change_semaphore_value(sem, TABLE, LOCKED);
 

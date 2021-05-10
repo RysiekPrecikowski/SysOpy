@@ -12,7 +12,7 @@
 #include <string.h>
 #include <errno.h>
 //r -1 s 1
-#include "utils.h"
+#include "../lab8 (wątki)/zad1/utils.h"
 
 /*
     Napisz program  w ktorym stworzysz semafor systemu V, „opuscisz go”,

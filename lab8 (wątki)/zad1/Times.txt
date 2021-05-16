@@ -1,0 +1,127 @@
+Zdecydowanie szybszy jest wariant 2 (bloki), ponieważ każdy wątek
+przegląda jedynie fragment obrazu, a nie cały w poszukiwaniu
+pikseli w konkretnym zakresie wartości.
+
+Dla mniejszej ilości wątków program jest wydajniejszy,
+związane jest to z dodatkowym czasem potrzebnym na stworzenie
+i zakończenie każdego wątku.
+
+###################################
+############  NUMBERS #############
+###################################
+
+**************** 1 threads *****************
+
+Total time ---> 4003       [μs]
+
+Thread 0   ---> 3527       [μs]
+
+**************** 2 threads *****************
+
+Total time ---> 3256       [μs]
+
+Thread 0   ---> 2786       [μs]
+Thread 1   ---> 2767       [μs]
+
+**************** 4 threads *****************
+
+Total time ---> 3273       [μs]
+
+Thread 0   ---> 2203       [μs]
+Thread 1   ---> 3021       [μs]
+Thread 2   ---> 2772       [μs]
+Thread 3   ---> 2377       [μs]
+
+**************** 8 threads *****************
+
+Total time ---> 5762       [μs]
+
+Thread 0   ---> 2189       [μs]
+Thread 1   ---> 1949       [μs]
+Thread 2   ---> 2427       [μs]
+Thread 3   ---> 2768       [μs]
+Thread 4   ---> 2703       [μs]
+Thread 5   ---> 2316       [μs]
+Thread 6   ---> 2177       [μs]
+Thread 7   ---> 1984       [μs]
+
+**************** 16 threads *****************
+
+Total time ---> 9209       [μs]
+
+Thread 0   ---> 2305       [μs]
+Thread 1   ---> 2630       [μs]
+Thread 2   ---> 2573       [μs]
+Thread 3   ---> 2113       [μs]
+Thread 4   ---> 2154       [μs]
+Thread 5   ---> 2638       [μs]
+Thread 6   ---> 2911       [μs]
+Thread 7   ---> 2414       [μs]
+Thread 8   ---> 2826       [μs]
+Thread 9   ---> 3122       [μs]
+Thread 10  ---> 3281       [μs]
+Thread 11  ---> 3253       [μs]
+Thread 12  ---> 2342       [μs]
+Thread 13  ---> 2026       [μs]
+Thread 14  ---> 2257       [μs]
+Thread 15  ---> 2102       [μs]
+
+###################################
+#############  BLOCK ##############
+###################################
+
+**************** 1 threads *****************
+
+Total time ---> 2947       [μs]
+
+Thread 0   ---> 2384       [μs]
+
+**************** 2 threads *****************
+
+Total time ---> 3414       [μs]
+
+Thread 0   ---> 1221       [μs]
+Thread 1   ---> 1749       [μs]
+
+**************** 4 threads *****************
+
+Total time ---> 2318       [μs]
+
+Thread 0   ---> 921        [μs]
+Thread 1   ---> 744        [μs]
+Thread 2   ---> 911        [μs]
+Thread 3   ---> 739        [μs]
+
+**************** 8 threads *****************
+
+Total time ---> 1586       [μs]
+
+Thread 0   ---> 428        [μs]
+Thread 1   ---> 422        [μs]
+Thread 2   ---> 377        [μs]
+Thread 3   ---> 437        [μs]
+Thread 4   ---> 362        [μs]
+Thread 5   ---> 469        [μs]
+Thread 6   ---> 512        [μs]
+Thread 7   ---> 507        [μs]
+
+**************** 16 threads *****************
+
+Total time ---> 2041       [μs]
+
+Thread 0   ---> 272        [μs]
+Thread 1   ---> 259        [μs]
+Thread 2   ---> 208        [μs]
+Thread 3   ---> 250        [μs]
+Thread 4   ---> 218        [μs]
+Thread 5   ---> 296        [μs]
+Thread 6   ---> 285        [μs]
+Thread 7   ---> 288        [μs]
+Thread 8   ---> 289        [μs]
+Thread 9   ---> 234        [μs]
+Thread 10  ---> 316        [μs]
+Thread 11  ---> 614        [μs]
+Thread 12  ---> 338        [μs]
+Thread 13  ---> 260        [μs]
+Thread 14  ---> 357        [μs]
+Thread 15  ---> 251        [μs]

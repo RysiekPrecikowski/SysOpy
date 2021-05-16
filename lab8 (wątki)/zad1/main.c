@@ -11,15 +11,16 @@
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/time.h>
 
 #include <pthread.h>
 #include "utils.h"
-#include "measureTimes.c"
+
 
 enum MODE {NUMBERS, BLOCK};
 
 short mode;
-unsigned short** values;
+unsigned short** image;
 unsigned short** negative;
 int n;
 unsigned short range;
@@ -30,7 +31,7 @@ typedef struct {
     int numbers_from;
     int numbers_to;
 
-    int res;
+    long unsigned res;
 }thread_info;
 
 void prepare_info_numbers(thread_info* info, int n, int range){
@@ -46,19 +47,21 @@ void prepare_info_numbers(thread_info* info, int n, int range){
     }
 }
 
-
-
 void* thread_negative(void *arg){
     thread_info *info = (thread_info *) arg;
 
     int i,j;
 
+    long unsigned time;
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
     switch (mode) {
         case NUMBERS:{
             for___(height, i){
                 for___(width, j){
-                    if (info->numbers_from <= values[i][j] and values[i][j] < info->numbers_to){
-                        negative[i][j] = range - values[i][j];
+                    if (info->numbers_from <= image[i][j] and image[i][j] < info->numbers_to){
+                        negative[i][j] = range - image[i][j];
                     }
                 }
             }
@@ -67,24 +70,44 @@ void* thread_negative(void *arg){
         case BLOCK:{
             for___(height, i){
                 for (j = info->numbers_from ; j < info->numbers_to ; j++){
-                    negative[i][j] = range - values[i][j];
+                    negative[i][j] = range - image[i][j];
                 }
             }
             break;
         }
     }
 
+    gettimeofday(&end_time, NULL);
+    time = (end_time.tv_sec - start_time.tv_sec) * 1000000 + end_time.tv_usec - start_time.tv_usec;
 
-
-    info->res = info->i;
+    info->res = time;
     pthread_exit(NULL);
 }
 
+void run_threads(pthread_t *threads, thread_info* info){
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    int i;
+
+    for___(n, i){
+        pthread_create(&threads[i], NULL, thread_negative, &info[i]);
+    }
+
+    for___(n, i){
+        pthread_join(threads[i], NULL);
+    }
+
+    gettimeofday(&end, NULL);
+    long unsigned time = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
+    print("Total time ---> %-10lu [μs]\n", time);
+
+    for___(n, i){
+        print("Thread %-3d ---> %-10lu [μs]", i, info[i].res);
+    }
+}
+
 int main(int argc, char* argv[]){
-    Times times;
-
     char* path = argv[1];
-
     n = string_to_int(argv[2]);
 
     if (equals(argv[3], "block")){
@@ -94,33 +117,30 @@ int main(int argc, char* argv[]){
         mode = NUMBERS;
     }
 
-
     FILE *fp = fopen(path, "r");
     if (!fp){
         eprint("ERROR WHEN OPENING FILE")
     }
     FILE *fp_out = fopen("negative", "w");
-    if (!fp){
+    if (!fp_out){
         eprint("ERROR WHEN OPENING FILE")
     }
 
-    char *tmp;
+    char *magic_number;
     size_t len;
-
-
-    getline(&tmp, &len, fp);
+    getline(&magic_number, &len, fp);
 
     fscanf(fp,"%d %d %hu", &width, &height, &range);
     range += 1;
     int i, j;
 
-    values = calloc(height, sizeof (*values));
+    image = calloc(height, sizeof (*image));
     negative = calloc(height, sizeof (*negative));
     for___(height, i){
-        values[i] = calloc(sizeof (int), width);
+        image[i] = calloc(sizeof (int), width);
         negative[i] = calloc(sizeof (int), width);
         for___(width, j){
-            fscanf(fp, "%hu", &values[i][j]);
+            fscanf(fp, "%hu", &image[i][j]);
         }
     }
 
@@ -137,19 +157,12 @@ int main(int argc, char* argv[]){
         default: eprint("not recognized mode");
     }
 
-    start(&times);
-    for___(n, i){
-        pthread_create(&threads[i], NULL, thread_negative, &info[i]);
-    }
-    sleep_seconds(0.1);
+
+    run_threads(threads, info);
 
 
-    for___(n, i){
-        pthread_join(threads[i], NULL);
-    }
-    end(&times);
 
-    fprintf(fp_out,"%s%d %d\n%d\n", tmp, width, height, range-1);
+    fprintf(fp_out,"%s%d %d\n%d\n", magic_number, width, height, range-1);
 
     for___(height, i) {
         for___(width, j) {
@@ -158,9 +171,15 @@ int main(int argc, char* argv[]){
         fprintf(fp_out, "\n");
     }
 
-//    printTimes(&times);
 
-//    //TODO freeeeeeeeeeeeee timesss
+    for___(height, i){
+        free(image[i]);
+        free(negative[i]);
+    }
+
+    free(image);
+    free(negative);
+    free(info);
 
     fclose(fp);
     fclose(fp_out);

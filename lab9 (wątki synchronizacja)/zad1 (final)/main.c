@@ -184,13 +184,11 @@ void* reindeer_thread(void* arg){
         lock_mutex(n_waiting_reindeer_mutex);
         n_waiting_reindeer += 1;
 
-        reindeer_are_waiting = true; //TODO mutexy?
+        reindeer_are_waiting = true;
 
         print("reindeer %d %-15s, waiting: %d", reindeer->name, reindeer_name(reindeer->name), n_waiting_reindeer);
         if (n_waiting_reindeer == ALL_REINDEER){
             print("reindeer %d %-15s--> Santa, wake up!", reindeer->name, reindeer_name(reindeer->name));
-
-
 
             lock_mutex(santa_awake_mutex);
 
@@ -198,9 +196,6 @@ void* reindeer_thread(void* arg){
             santa_awake = true;
             pthread_cond_broadcast(&santa_awake_cond);
             unlock_mutex(santa_awake_mutex);
-
-
-            n_waiting_reindeer = 0;
         }
 
         unlock_mutex(n_waiting_reindeer_mutex);
@@ -230,7 +225,7 @@ void* santa_thread(void* arg){
             print("SANTA DELIVERING GIFTS", NULL);
             sleep_seconds(GIFTS_DELIVERY_TIME);
 
-
+            n_waiting_reindeer = 0;
             lock_mutex(reindeer_are_waiting_mutex);
             reindeer_are_waiting = false;
             pthread_cond_broadcast(&reindeer_are_waiting_cond);
@@ -313,34 +308,21 @@ int main(void){
 }
 
 
-
-
 void destroy_mutexes(){
     pthread_mutex_destroy(&santa_awake_mutex);
     pthread_cond_destroy(&santa_awake_cond);
     pthread_mutex_destroy(&elves_at_santa_mutex);
-
-
+    pthread_mutex_destroy(&reindeer_at_santa_mutex);
 
 
     pthread_mutex_destroy(&n_elves_waiting_mutex);
     pthread_mutex_destroy(&elves_are_waiting_for_santa_mutex);
     pthread_cond_destroy(&elves_are_waiting_for_santa_cond);
 
-//    for_i(ALL_ELVES){
-//        pthread_mutex_destroy(&elves_ready_mutex[i]);
-//        pthread_cond_destroy(&elves_ready_cond[i]);
-//    }
-
-
 
     pthread_mutex_destroy(&n_waiting_reindeer_mutex);
-    pthread_mutex_destroy(&reindeer_at_santa_mutex);
-
-//    for_i(ALL_REINDEER){
-//        pthread_mutex_destroy(&reindeer_ready_mutex[i]);
-//        pthread_cond_destroy(&reindeer_ready_cond[i]);
-//    }
+    pthread_mutex_destroy(&reindeer_are_waiting_mutex);
+    pthread_cond_destroy(&reindeer_are_waiting_cond);
 }
 
 #pragma clang diagnostic pop

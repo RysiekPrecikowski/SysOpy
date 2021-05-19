@@ -81,16 +81,20 @@ void* elf_thread(void* arg){
 
         lock_mutex(elves_are_waiting_for_santa_mutex);
         while (elves_are_waiting_for_santa == true){
+            print("ELF %d %-20s, waiting for elves to come back", elf->name, elf_name(elf->name));
             pthread_cond_wait(&elves_are_waiting_for_santa_cond, &elves_are_waiting_for_santa_mutex);
         }
 
-        lock_mutex(n_elves_waiting_mutex);  /// można sie pozbyc jednego mutexa, ale wtedy to jest mniej czytelne, wiec zostawie na 2
+
+        lock_mutex(n_elves_waiting_mutex);
         n_elves_waiting ++;
         if (n_elves_waiting == 3)
             elves_are_waiting_for_santa = true;
+        unlock_mutex(n_elves_waiting_mutex);
 
         unlock_mutex(elves_are_waiting_for_santa_mutex);
 
+        lock_mutex(n_elves_waiting_mutex);
         print("ELF %d %-20s, waiting %d", elf->name, elf_name(elf->name), n_elves_waiting);
 
         if (n_elves_waiting == 3){
@@ -162,14 +166,13 @@ void* santa_thread(void* arg){
         while (santa_awake == false){
             pthread_cond_wait(&santa_awake_cond, &santa_awake_mutex);
         }
-        printf("\n");
-        print("SANTA AWAKENING", NULL);
+        print("\nSANTA AWAKENING", NULL);
         unlock_mutex(santa_awake_mutex);
 
         lock_mutex(reindeer_at_santa_mutex);
         if (reindeer_at_santa) {
             reindeer_at_santa = false;
-            print("SANTA DELIVERING GIFTS", NULL);
+            print("\nSANTA DELIVERING GIFTS\n", NULL);
             sleep_seconds(GIFTS_DELIVERY_TIME);
 
             n_waiting_reindeer = 0;
@@ -184,7 +187,7 @@ void* santa_thread(void* arg){
 
         if(elves_at_santa){
             elves_at_santa = false;
-            print("SANTA SOLVING PROBLEMS", NULL);
+            print("\nSANTA SOLVING PROBLEMS\n", NULL);
             sleep_seconds(PROBLEM_SOLVING_TIME);
 
 
@@ -203,8 +206,7 @@ void* santa_thread(void* arg){
 
         lock_mutex(santa_awake_mutex);
         santa_awake = false;
-        print("SANTA FALLING ASLEEP", NULL);
-        printf("\n");
+        print("\nSANTA FALLING ASLEEP\n", NULL);
         unlock_mutex(santa_awake_mutex);
     }
     pthread_exit(NULL);

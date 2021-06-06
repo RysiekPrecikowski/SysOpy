@@ -20,6 +20,9 @@
 #define login_format "login %s"
 #define wrong_name_format "name %s is taken!!!"
 
+#define exit_message "let me outtttt!!"
+#define ping_message "ping :o"
+
 char number_to_symbol(int n){
     switch (n) {
         case 0:
@@ -79,7 +82,7 @@ void read_message(char* message, game_info* info_out){
     printf("\n");
     fflush(stdout);
 
-    if (info.end)
+    if (info.end and info.my_turn)
         exit(0);
 
     info_out->my_turn = info.my_turn;
@@ -105,16 +108,6 @@ bool check_draw(char board[10]){
 
 void check_win(symbol s, char board[10], game_info* info0, game_info* info1){
     bool win = false;
-
-    if (check_draw(board)){
-        info0->draw = true;
-        info1->draw = true;
-
-        info0->end = true;
-        info1->end = true;
-        return;
-    }
-
 
     for(int i = 0 ; i < 3 ; i++){
         int counter =0;
@@ -142,10 +135,10 @@ void check_win(symbol s, char board[10], game_info* info0, game_info* info1){
     for (int i = 0 ; i < 3 ; i++) {
         if (board[to_1d(i, i)] == s)
             counterl++;
-        if (board[to_1d(i, 3 - 1 - i)] == 2)
+        if (board[to_1d(i, 3 - 1 - i)] == s)
             counterr++;
     }
-
+//    print("%d %d", counterl, counterr);
     if (counterl == 3 or counterr == 3 or win){
         info0->end=true;
         info0->you_won= true;
@@ -193,7 +186,18 @@ void server_got_position(char* position, int player0,
     game_info info0 = {.my_turn = false, .end = false};
     game_info info1 = {.my_turn = true, .end = false};
 
-    check_win(s, boards[player0], &info0, &info1);
+    if (check_draw(boards[player0])){
+        info0.draw = true;
+        info1.draw = true;
+
+        info0.end = true;
+        info1.end = true;
+
+    } else {
+        check_win(s, boards[player0], &info0, &info1);
+    }
+
+
 
     char* message_to0 = prepare_message(client_symbols[player0], boards[player0], &info0);
     char* message_to1 = prepare_message(client_symbols[player1], boards[player1], &info1);
@@ -238,8 +242,13 @@ void start_game(int player0, int player1,
     char* message_to1 = prepare_message(client_symbols[player1], boards[player1], &info1);
 
 
-    send(fds[player0].fd, message_to0, strlen(message_to0),0);
-    send(fds[player1].fd, message_to1, strlen(message_to1),0);
+    if (send(fds[player0].fd, message_to0, strlen(message_to0),0) < 0){
+        perror("SEND to 0");
+    }
+    sleep_seconds(0.1);
+    if (send(fds[player1].fd, message_to1, strlen(message_to1),0) < 0){
+        perror("SEND to 1");
+    }
 
     free(message_to0);
     free(message_to1);

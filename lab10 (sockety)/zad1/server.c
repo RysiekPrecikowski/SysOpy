@@ -19,7 +19,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
-
+#include <sys/un.h>
 #include <sys/poll.h>
 
 #pragma clang diagnostic push
@@ -37,6 +37,8 @@ int clients_games[MAX_CLIENTS];
 char boards[MAX_CLIENTS][10];
 
 int clients[ALL_FDS];
+bool clients_is_online[MAX_CLIENTS];
+
 
 struct pollfd fds[ALL_FDS];
 #define EMPTY (0)
@@ -44,6 +46,9 @@ struct pollfd fds[ALL_FDS];
 #define NAME_UNKNOWN (2)
 int curr_clients = 0;
 int last_client = -1;
+
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int add_client(int fd){
     if (curr_clients == MAX_CLIENTS)
@@ -56,34 +61,40 @@ int add_client(int fd){
             clients[i] = NAME_UNKNOWN;
             fds[i].fd = fd;
             fds[i].events = POLLIN;
+            clients_is_online[i] = true;
             break;
         }
     }
     return i;
 }
 
-void end_disconnected(int i){
-    game_info info = {.end = true, .you_won = true};
+void end_disconnected(int i, bool won){
+    game_info info = {.end = true, .you_won = won, .my_turn = true};
     char* message = prepare_message(client_symbols[i], boards[i], &info);
-    send(fds[i].fd, message, strlen(message), 0);
+    print("END DISCONNECTED %d %d", fds[i].fd, clients[i])
+    send(fds[i].fd, message, strlen(message), 0); //MSG_NOSIGNAL
 }
 
 void delete_client(int i){
-    clients[i] = EMPTY;
-
-    fds[i].fd = -1;
-
-    if (clients[clients_games[i]] != EMPTY){
-        end_disconnected(clients[clients_games[i]]);
-
-        if (curr_clients % 2 == 1 and curr_clients > 1){
-            start_game(last_client, clients_games[i], boards, client_symbols, clients_games, fds);
-        }
-        last_client = clients_games[i];
-        print("LAST %d", last_client);
+    if (clients[i] == EMPTY){
+        print("GOTCHA %d", i)
+        return;
     }
 
+    clients[i] = EMPTY;
+
+    print("DELETING %d", i);
+
+    if (clients[clients_games[i]] != EMPTY){
+        print("DELETING FROM %d to %d", i, clients_games[i]);
+        end_disconnected(clients_games[i], true);
+    }
+
+    fds[i].fd = -1;
     curr_clients--;
+
+    print("CLIENTS %d", curr_clients);
+
 }
 
 bool check_name(char *name){
@@ -128,6 +139,64 @@ int init_server_network(int port){
     return socket_network;
 }
 
+
+int init_server_local(char* path){
+    int socket_local;
+    if ((socket_local = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0)) == 0){
+        perror("SOCKET FAILED");
+    }
+
+    struct sockaddr_un address;
+    address.sun_family = AF_UNIX;
+    strcpy(address.sun_path, path);
+    int opt=1;
+    if (setsockopt(socket_local, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("SET SOCKET OPT FAILED");
+    }
+
+    unlink(path);
+    if (bind(socket_local, (struct sockaddr *) &address, sizeof (address)) < 0){
+        perror("BIND FAILED");
+    }
+
+    if (listen(socket_local, 10) < 0) {
+        perror("LISTEN FAILED");
+        exit(EXIT_FAILURE);
+    }
+
+    fds[SERVER_ID_LOCAL].fd = socket_local;
+    fds[SERVER_ID_LOCAL].events = POLLIN;
+    clients[SERVER_ID_LOCAL] = TAKEN;
+
+    return socket_local;
+}
+
+
+void *ping(void *arg){
+    while (true) {
+        pthread_mutex_lock(&mutex);
+
+        for_i(curr_clients){
+            if (clients_is_online[i] == false){
+                print("%d offline", i);
+                end_disconnected(i, false);
+                delete_client(i);
+            }
+        }
+
+        for_i(curr_clients){
+            clients_is_online[i] = false;
+            send(fds[i].fd, ping_message, strlen(ping_message), 0);
+        }
+
+        pthread_mutex_unlock(&mutex);
+        sleep_seconds(5);
+    }
+
+    return NULL;
+}
+
+
 int main(void) {
     char buffer[128] = {0};
 
@@ -137,12 +206,15 @@ int main(void) {
     int rc;
     bool close_server = false;
 
+    char name[] = "server_socket";
     init_server_network(PORT);
+    init_server_local(name);
+
+    pthread_t ping_thread;
+    pthread_create(&ping_thread, NULL, ping, NULL);
 
     int new_sd;
     while (close_server == false) {
-        print_array(clients, ALL_FDS, "%d ");
-
         rc = poll(fds, ALL_FDS, timeout);
 
         if (rc < 0) {
@@ -153,25 +225,21 @@ int main(void) {
 
         for_i(ALL_FDS) {
             if (fds[i].revents == 0 or clients[i] == EMPTY) { //TODO CO TO JEST TO ZERO?
-                // Loop through to find the descriptors
-                // that returned POLLIN and determine whether
-                // it's the listening or the active connection.
-//                print("revents 0 or empty %d", i);
                 continue;
             }
             if (not (fds[i].revents & POLLIN)) {
                 print("ERROR !!!!! REVENTS[i] = %d", fds[i].revents)
             }
-
+            pthread_mutex_lock(&mutex);
             if (i == SERVER_ID_NETWORK or i == SERVER_ID_LOCAL) {
-                print("SERVER LISTENER HERE !!!!", NULL);
+//                print("SERVER LISTENER HERE !!!!", NULL);
 
                 new_sd = accept(fds[i].fd, NULL, NULL);
                 while (new_sd != -1) {
-                    print("NEW SD %d", new_sd);
-                    print("NEW CLIENT :O", NULL)
-                    int client_id = add_client(new_sd);
+//                    print("NEW SD %d", new_sd);
 
+                    int client_id = add_client(new_sd);
+                    print("NEW CLIENT %d", client_id)
                     new_sd = accept(fds[i].fd, NULL, NULL);
                 }
             } else {
@@ -182,11 +250,13 @@ int main(void) {
                     print("RECV FAILED", NULL)
                 } else if (rc == 0) {
                     // Connection is closed;
-                    print("CLOSED CONNECTION %d", i);
-                    delete_client(i);
-                } else {
-                    print("GOT MESSAGE :OOOO %s", buffer);
+                    if (clients[i] != EMPTY) {
+//                        print("CLOSED CONNECTION %d", i);
 
+                    }
+//                    delete_client(i);
+                } else {
+//                    print("GOT MESSAGE %s", buffer);
                     if (clients[i] == NAME_UNKNOWN){
                         char name[message_size];
                         sscanf(buffer, login_format, name);
@@ -196,7 +266,6 @@ int main(void) {
                             clients[i] = TAKEN;
 
                             char message[] = "good";
-
                             send(fds[i].fd, message, strlen(message), 0);
 
                             curr_clients ++;
@@ -210,32 +279,42 @@ int main(void) {
                             }
                             print("CLIENTS %d", curr_clients);
 
-
                             last_client = i;
                         } else {
                             print("NAME %s taken", name);
-
                             char message[message_size];
 
                             sprintf(message, wrong_name_format, name);
                             send(fds[i].fd, message, strlen(message), 0);
-
                             delete_client(i);
                         }
                     } else {
-                        server_got_position(buffer, i,
-                                            boards,
-                                            client_symbols,
-                                            clients_games,
-                                            fds);
+                        if (equals(ping_message, buffer)) {
+//                            print("ping from  %d", i);
+                            clients_is_online[i] = true;
+                        } else if (equals(exit_message, buffer)){
+//                            print("%d want to get out", i);
+                            delete_client(i);
+
+
+                        } else {
+                            server_got_position(buffer, i,
+                                                boards,
+                                                client_symbols,
+                                                clients_games,
+                                                fds);
+                        }
                     }
+
                 }
 
             }
+            pthread_mutex_unlock(&mutex);
         }
 
     }
 
+    pthread_join(ping_thread, NULL);
     return 0;
 }
 

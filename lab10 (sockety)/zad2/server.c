@@ -27,18 +27,19 @@
 #define PORT 8081
 
 #define MAX_CLIENTS 4
-#define SERVER_ID_LOCAL MAX_CLIENTS
-#define SERVER_ID_NETWORK (MAX_CLIENTS + 1)
-#define ALL_FDS (SERVER_ID_NETWORK + 1)
+#define SERVER_ID_LOCAL 0
+#define SERVER_ID_NETWORK 1
+#define ALL_FDS 2
 
 char* client_names[MAX_CLIENTS];
 symbol client_symbols[MAX_CLIENTS];
 int clients_games[MAX_CLIENTS];
 char boards[MAX_CLIENTS][10];
 
-int clients[ALL_FDS];
+int clients[MAX_CLIENTS];
+int client_fds[MAX_CLIENTS];
 bool clients_is_online[MAX_CLIENTS];
-
+struct sockaddr client_addr[MAX_CLIENTS];
 
 struct pollfd fds[ALL_FDS];
 #define EMPTY (0)
@@ -50,34 +51,70 @@ int last_client = -1;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int add_client(int fd){
+bool check_name(char *name){
+    for_i(MAX_CLIENTS){
+        if (clients[i] == TAKEN) {
+//            print("%d", i)
+            if (equals(name, client_names[i])) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+int add_client(char* name, int fd, struct sockaddr sockaddr){
     if (curr_clients == MAX_CLIENTS)
         return -1;
 
+    if (check_name(name))
+        return -1;
+
+    print("ADDING CLIENT %s", name);
+
     int i;
-    print("adding client", NULL)
+//
     for___(MAX_CLIENTS, i){
         if (clients[i] == EMPTY){
-            clients[i] = NAME_UNKNOWN;
-            fds[i].fd = fd;
-            fds[i].events = POLLIN;
+//            print("%d", i)
+            clients[i] = TAKEN;
+            client_addr[i] = sockaddr;
             clients_is_online[i] = true;
+            client_names[i] = copy_string(name);
+            client_fds[i] = fd;
+
+            sendto(fd, good_name_message, strlen(good_name_message), 0, &sockaddr, sizeof (sockaddr));
             break;
         }
     }
+
+
+    curr_clients ++;
+    if (curr_clients > 1 and curr_clients % 2 == 0) {
+        start_game(last_client, i, boards, client_symbols,
+                   clients_games, client_fds, client_addr[last_client], client_addr[i]);
+    }
+    print("CLIENTS %d", curr_clients);
+
+    last_client = i;
+
     return i;
 }
 
 void end_disconnected(int i, bool won){
     game_info info = {.end = true, .you_won = won, .my_turn = true};
     char* message = prepare_message(client_symbols[i], boards[i], &info);
-    print("END DISCONNECTED %d %d", fds[i].fd, clients[i])
+    print("END DISCONNECTED %d", clients[i])
     send(fds[i].fd, message, strlen(message), 0); //MSG_NOSIGNAL
+
+    if (sendto(client_fds[i], message, strlen(message), 0, &client_addr[i], sizeof (client_addr[i])) < 0){
+        perror("SEND to 1");
+    }
 }
 
 void delete_client(int i){
     if (clients[i] == EMPTY){
-        print("GOTCHA %d", i)
+//        print("GOTCHA %d", i)
         return;
     }
 
@@ -90,29 +127,31 @@ void delete_client(int i){
         end_disconnected(clients_games[i], true);
     }
 
-    fds[i].fd = -1;
+//    fds[i].fd = -1;
     curr_clients--;
 
     print("CLIENTS %d", curr_clients);
 
 }
 
-bool check_name(char *name){
+
+
+int get_by_addr(struct sockaddr *sockaddr){
     for_i(MAX_CLIENTS){
-        if (clients[i] != TAKEN)
+        if(clients[i] != TAKEN)
             continue;
-        if (equals(name, client_names[i])){
-            return false;
+        if (equals(sockaddr->sa_data, client_addr[i].sa_data) and sockaddr->sa_family == client_addr[i].sa_family) {
+//            print("%d", i)
+            return i;
         }
     }
-    return true;
+    return -1;
 }
-
 
 int init_server_network(int port){
     int opt = 1;
     int socket_network;
-    if ((socket_network = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK , 0)) == 0){
+    if ((socket_network = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK , 0)) == 0){
         perror("SOCKET FAILED");
     }
     if (setsockopt(socket_network, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
@@ -128,13 +167,9 @@ int init_server_network(int port){
         perror("BIND FAILED");
     }
 
-    if (listen(socket_network, 10) < 0) {
-        perror("LISTEN FAILED");
-        exit(EXIT_FAILURE);
-    }
+
     fds[SERVER_ID_NETWORK].fd = socket_network;
     fds[SERVER_ID_NETWORK].events = POLLIN;
-    clients[SERVER_ID_NETWORK] = TAKEN;
 
     return socket_network;
 }
@@ -154,19 +189,14 @@ int init_server_local(char* path){
         perror("SET SOCKET OPT FAILED");
     }
 
-    unlink(path);
+//    unlink(path);
     if (bind(socket_local, (struct sockaddr *) &address, sizeof (address)) < 0){
         perror("BIND FAILED");
     }
 
-//    if (listen(socket_local, 10) < 0) {
-//        perror("LISTEN LOCAL FAILED");
-//        exit(EXIT_FAILURE);
-//    }
 
     fds[SERVER_ID_LOCAL].fd = socket_local;
     fds[SERVER_ID_LOCAL].events = POLLIN;
-    clients[SERVER_ID_LOCAL] = TAKEN;
 
     return socket_local;
 }
@@ -186,7 +216,8 @@ void *ping(void *arg){
 
         for_i(curr_clients){
             clients_is_online[i] = false;
-            send(fds[i].fd, ping_message, strlen(ping_message), 0);
+            sendto(client_fds[i], ping_message, strlen(ping_message), 0,&client_addr[i], sizeof (client_addr[i]));
+
         }
 
         pthread_mutex_unlock(&mutex);
@@ -196,39 +227,39 @@ void *ping(void *arg){
     return NULL;
 }
 
-void login_client(char* name, int i){
-    if (check_name(name)) {
-        client_names[i] = copy_string(name);
-        clients[i] = TAKEN;
+//void login_client(char* name, int i){
+//    if (check_name(name)) {
+//        client_names[i] = copy_string(name);
+//        clients[i] = TAKEN;
+//
+//        char message[] = "good";
+//        send(fds[i].fd, message, strlen(message), 0);
+//
+//        curr_clients ++;
+//        if (curr_clients > 1 and curr_clients % 2 == 0) {
+//            start_game(last_client, i, boards, client_symbols, clients_games, fds);
+//        }
+//        print("CLIENTS %d", curr_clients);
+//
+//        last_client = i;
+//    } else {
+//        print("NAME %s taken", name);
+//        char message[message_size];
+//
+//        sprintf(message, wrong_name_format, name);
+//        send(fds[i].fd, message, strlen(message), 0);
+//        delete_client(i);
+//    }
+//}
 
-        char message[] = "good";
-        send(fds[i].fd, message, strlen(message), 0);
-
-        curr_clients ++;
-        if (curr_clients > 1 and curr_clients % 2 == 0) {
-            start_game(last_client, i, boards, client_symbols, clients_games, fds);
-        }
-        print("CLIENTS %d", curr_clients);
-
-        last_client = i;
-    } else {
-        print("NAME %s taken", name);
-        char message[message_size];
-
-        sprintf(message, wrong_name_format, name);
-        send(fds[i].fd, message, strlen(message), 0);
-        delete_client(i);
-    }
-}
-
-void accept_clients(int fd){
-    int new_sd = accept(fd, NULL, NULL);
-    while (new_sd != -1) {
-        int client_id = add_client(new_sd);
-        print("NEW CLIENT %d", client_id)
-        new_sd = accept(fd, NULL, NULL);
-    }
-}
+//void accept_clients(int fd){
+////    int new_sd = accept(fd, NULL, NULL);
+////    while (new_sd != -1) {
+////        int client_id = add_client(new_sd);
+////        print("NEW CLIENT %d", client_id)
+////        new_sd = accept(fd, NULL, NULL);
+////    }
+//}
 
 int main(void) {
     char buffer[128];
@@ -255,47 +286,61 @@ int main(void) {
         } else if (rc == 0) {
             print("POLL TIMEOUT", NULL);
         }
-
+//        print_array(clients, MAX_CLIENTS, "%d ");
         for_i(ALL_FDS) {
-            if (fds[i].revents == 0 or clients[i] == EMPTY) {
+            if (fds[i].revents == 0) {
                 continue;
             }
-            if (not (fds[i].revents & POLLIN)) {
+            if (not(fds[i].revents & POLLIN)) {
                 print("ERROR !!!!! REVENTS[i] = %d", fds[i].revents)
             }
             pthread_mutex_lock(&mutex);
-            if (i == SERVER_ID_NETWORK or i == SERVER_ID_LOCAL) {
-                accept_clients(fds[i].fd);
 
-            } else {
+            {
                 memset(buffer, 0, sizeof(buffer));
-//                struct sockaddr from_addr;
-//                socklen_t from_length = sizeof(struct sockaddr);
-//                rc = recvfrom(fds[i].fd, buffer, sizeof(buffer), 0, &from_addr, &from_length);
+                struct sockaddr from_addr;
+                socklen_t from_length = sizeof(struct sockaddr);
+                rc = recvfrom(fds[i].fd, buffer, sizeof(buffer), 0, &from_addr, &from_length);
 
-                rc = recv(fds[i].fd, buffer, sizeof(buffer), 0);
 
                 if (rc < 0) {
                     print("RECV FAILED", NULL)
+                    perror(":((");
                     continue;
                 } else if (rc == 0) {
                     continue;
                 }
 
-                print("message %s", buffer)
+//                print("message %s", buffer)
 
-                if (clients[i] == NAME_UNKNOWN) {
-                    char name[message_size];
-                    sscanf(buffer, login_format, name);
+                char name[message_size];
 
-                    login_client(name, i);
+                if (sscanf(buffer, login_format, name) == 1) {
+
+                    int j = add_client(name, fds[i].fd, from_addr);
+
+                    if (j >= 0) {
+                        print("CLIENT ADDED %d", j)
+
+
+                    } else{
+                        print("CLIENT NOT ADDED %d", j)
+                    }
+
+
+
                 } else {
+                    int client = get_by_addr(&from_addr);
+//                    print("%d", client);
                     if (equals(ping_message, buffer)) {
-                        clients_is_online[i] = true;
+//                        print("GOT PING %d", client);
+                        clients_is_online[client] = true;
                     } else if (equals(exit_message, buffer)) {
-                        delete_client(i);
+                        delete_client(client);
                     } else {
-                        server_got_position(buffer, i, boards, client_symbols, clients_games, fds);
+
+                        server_got_position(buffer, client, boards, client_symbols,
+                                            clients_games, client_fds, client_addr);
                     }
                 }
             }

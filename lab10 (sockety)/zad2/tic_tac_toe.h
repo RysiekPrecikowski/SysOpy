@@ -23,6 +23,9 @@
 #define exit_message "let me outtttt!!"
 #define ping_message "ping :o"
 
+#define move_message_format "%s %s"
+#define good_name_message "good :)))))"
+
 char number_to_symbol(int n){
     switch (n) {
         case 0:
@@ -160,17 +163,27 @@ bool check_board(int pos, char board[10]){
     return true;
 }
 
+
+
 void server_got_position(char* position, int player0,
                          char boards[][10],
                          symbol* client_symbols,
                          int* clients_games,
-                         struct pollfd fds[]){
+                         int* client_fds, struct sockaddr *adrr){
+
+
     int pos = string_to_int(position);
+
+    print("pos %d", pos);
 
     if (check_board(pos, boards[player0]) == false){
         game_info info = {.my_turn = true, .retry = true};
         char* message = prepare_message(client_symbols[player0], boards[player0], &info);
-        send(fds[player0].fd,message, strlen(message), 0);
+//        send(fds[player0].fd,message, strlen(message), 0);
+
+        if (sendto(client_fds[player0], message, strlen(message), 0, &adrr[player0], sizeof (adrr[player0])) < 0){
+            perror("SEND to 0");
+        }
         printf("WRONG!!!!!!!!!!!!\n");
         return;
     }
@@ -203,8 +216,14 @@ void server_got_position(char* position, int player0,
     char* message_to1 = prepare_message(client_symbols[player1], boards[player1], &info1);
 
 
-    send(fds[player0].fd, message_to0, strlen(message_to0),0);
-    send(fds[player1].fd, message_to1, strlen(message_to1),0);
+
+    if (sendto(client_fds[player0], message_to0, strlen(message_to0), 0, &adrr[player0], sizeof (adrr[player0])) < 0){
+        perror("SEND to 0");
+    }
+//    sleep_seconds(0.1);
+    if (sendto(client_fds[player1], message_to1, strlen(message_to1), 0, &adrr[player1], sizeof (adrr[player1])) < 0){
+        perror("SEND to 1");
+    }
 
     free(message_to0);
     free(message_to1);
@@ -218,7 +237,7 @@ void start_game(int player0, int player1,
                 char boards[][10],
                 symbol* client_symbols,
                 int* clients_games,
-                struct pollfd fds[]){
+                int* client_fds, struct sockaddr adrr0, struct sockaddr addr1){
 
     print("STARTING GAME %d and %d", player0, player1);
 
@@ -242,11 +261,11 @@ void start_game(int player0, int player1,
     char* message_to1 = prepare_message(client_symbols[player1], boards[player1], &info1);
 
 
-    if (send(fds[player0].fd, message_to0, strlen(message_to0),0) < 0){
+    if (sendto(client_fds[player0], message_to0, strlen(message_to0), 0, &adrr0, sizeof (adrr0)) < 0){
         perror("SEND to 0");
     }
-    sleep_seconds(0.1);
-    if (send(fds[player1].fd, message_to1, strlen(message_to1),0) < 0){
+//    sleep_seconds(0.1);
+    if (sendto(client_fds[player1], message_to1, strlen(message_to1), 0, &addr1, sizeof (addr1)) < 0){
         perror("SEND to 1");
     }
 

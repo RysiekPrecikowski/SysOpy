@@ -29,38 +29,72 @@
 #define PORT 8081
 
 int socket_global;
+struct pollfd fds[2];
 
+#define LOCAL 0
+#define NETWORK 1
+
+struct sockaddr_un address;
+bool is_local = false;
+int sock_in_local;
+
+int server_socket;
+int binded_socket;
+struct sockaddr_un local_sockaddr;
+struct sockaddr_in server_addr;
 void sig_handler(int sig){
     exit(-1);
 }
 
 void bye(){
     printf("BYE BYE!!!\n");
-    send(socket_global, exit_message, strlen(exit_message), MSG_DONTWAIT );
+//    sendto(fds[SERV_FD].fd, exit_message, strlen(exit_message), 0 , (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
+
+    if (is_local)
+        sendto(fds[SERV_FD].fd, exit_message, strlen(exit_message), 0, (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
+    else {
+        if (sendto(fds[SERV_FD].fd, exit_message, strlen(exit_message), 0, (struct sockaddr *) &server_addr,
+                   sizeof(struct sockaddr_in)) < 0)
+            perror("SEND");
+    }
+
+    unlink(int_to_string(getpid()));
 }
 
-#define LOCAL 0
-#define NETWORK 1
 
-struct sockaddr_un address;
+
+
+
 int init_connection(int type, char* arg){
     int sock;
     if (type == LOCAL){
-        if ((sock = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
-            perror("SOCKET FAILED");
-        }
+        server_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
 
-        address.sun_family = AF_UNIX;
+        memset(&local_sockaddr, 0, sizeof(struct sockaddr_un));
+        local_sockaddr.sun_family = AF_UNIX;
+        print("%s", arg);
+        strcpy(local_sockaddr.sun_path, arg);
 
-        strcpy(address.sun_path, arg);
-        if (connect(sock, (struct sockaddr *) &address, sizeof(address)) < 0) {
-            perror("CONNECT FAILED");
-        }
+        if (connect(server_socket, (struct sockaddr *)&local_sockaddr,
+                sizeof(struct sockaddr_un)) < 0)
+            perror("CONNECT");
 
+        binded_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
+        struct sockaddr_un binded_sockaddr;
+        memset(&binded_sockaddr, 0, sizeof(struct sockaddr_un));
+        binded_sockaddr.sun_family = AF_UNIX;
+
+        char tmp_path[20];
+        sprintf(tmp_path, "%d", getpid());
+
+        sprintf(binded_sockaddr.sun_path, "%s", tmp_path);
+        unlink(tmp_path);
+        bind(binded_socket, (struct sockaddr *)&binded_sockaddr,
+             sizeof(struct sockaddr_un));
+
+        is_local = true;
     } else if (type == NETWORK){
-        struct sockaddr_in server_addr;
-
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        if ((server_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             perror("SOCKET FAILED");
         }
         int port = string_to_int(arg);
@@ -71,7 +105,7 @@ int init_connection(int type, char* arg){
             perror("INET PTON FAILED");
         }
 
-        if (connect(sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
+        if (connect(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
             perror("CONNECT FAILED");
         }
     }
@@ -86,7 +120,14 @@ int main(int argc, char* argv[]) {
 
     int sock;
 
-    int connection_type = LOCAL;
+    int connection_type = NETWORK;
+
+    if (equals(argv[2], "NETWORK"))
+        connection_type = NETWORK;
+    if(equals(argv[2], "LOCAL"))
+        connection_type = LOCAL;
+
+
 
     switch (connection_type) {
         case NETWORK:
@@ -104,12 +145,16 @@ int main(int argc, char* argv[]) {
 
     int timeout = (2.5 * 60 * 1000);
 
-    struct pollfd fds[2];
+
 
     fds[IN_FD].fd = fileno(stdin);
     fds[IN_FD].events = POLLIN;
 
-    fds[SERV_FD].fd = sock;
+    if (is_local)
+        fds[SERV_FD].fd = binded_socket;
+    else
+        fds[SERV_FD].fd = server_socket;
+
     fds[SERV_FD].events = POLLIN;
 
     char position[10];
@@ -123,12 +168,19 @@ int main(int argc, char* argv[]) {
 
     sprintf(login_message, login_format, name);
 
-    sendto(sock, login_message, strlen(login_message), 0, &address, sizeof (address));
+    if (is_local)
+        sendto(fds[SERV_FD].fd, login_message, strlen(login_message), 0, (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
+    else {
+        if (sendto(fds[SERV_FD].fd, login_message, strlen(login_message), 0, (struct sockaddr *) &server_addr,
+                   sizeof(struct sockaddr_in)) < 0)
+            perror("SEND");
+    }
 
-    rc = recv(sock, buffer, sizeof(buffer), 0);
 
+    rc = recv(fds[SERV_FD].fd, buffer, sizeof(buffer), 0);
     if (rc < 0) {
         print("RECV FAILED", NULL)
+        perror(":((");
     } else if (rc == 0) {
         print("CLOSED CONNECTION", NULL);
         return -1;
@@ -143,7 +195,6 @@ int main(int argc, char* argv[]) {
     }
 
 
-    return 0;
 
     while (true) {
         sleep(1);
@@ -163,7 +214,7 @@ int main(int argc, char* argv[]) {
 
             if (i == SERV_FD) {
                 memset(buffer, 0, sizeof (buffer));
-                rc = recv(sock, buffer, sizeof(buffer), 0);
+                rc = recv(fds[i].fd, buffer, sizeof(buffer), 0);
 
                 if (rc < 0) {
                     print("RECV FAILED", NULL)
@@ -172,7 +223,17 @@ int main(int argc, char* argv[]) {
                     exit(1);
                 } else {
                     if (equals(ping_message, buffer)){
-                        send(sock, buffer, strlen(buffer), 0);
+//                        printf("got ping\n");
+
+                        if (is_local)
+                            sendto(fds[SERV_FD].fd, buffer, strlen(buffer), 0, (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
+                        else {
+                            if (sendto(fds[SERV_FD].fd, buffer, strlen(buffer), 0, (struct sockaddr *) &server_addr,
+                                       sizeof(struct sockaddr_in)) < 0)
+                                perror("SEND");
+                        }
+
+//                        sendto(fds[SERV_FD].fd, buffer, strlen(buffer), 0, (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
                     } else {
                         read_message(buffer, info);
                     }
@@ -183,7 +244,22 @@ int main(int argc, char* argv[]) {
 
                     fscanf(stdin, "%s", position);
 
-                    send(sock, position, strlen(position), 0);
+//                    char message[100];
+
+//                    sprintf(message, move_message_format, name, position);
+
+                    if (is_local)
+                        sendto(fds[SERV_FD].fd, position, strlen(position), 0, (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
+                    else {
+                        if (sendto(fds[SERV_FD].fd, position, strlen(position), 0, (struct sockaddr *) &server_addr,
+                                   sizeof(struct sockaddr_in)) < 0)
+                            perror("SEND");
+                    }
+
+
+//                    sendto(fds[SERV_FD].fd, position, strlen(position),
+//                           0, (struct sockaddr *)&local_sockaddr, sizeof(struct sockaddr_un));
+
                 }
             }
         }

@@ -5,12 +5,12 @@ run_server: compile
 	./server
 
 run_client: compile
-	./client $(NAME)
+	./client $(NAME) $(TYPE)
 
 clean:
-	rm -f *.o *.a *.so server client
+	rm -f *.o *.a *.so server client server_socket
 
 compile:
-	make clean
+	#make clean
 	$(CC) $(CFLAGS) server.c -o server -lpthread
 	$(CC) $(CFLAGS) client.c -o client -lpthread

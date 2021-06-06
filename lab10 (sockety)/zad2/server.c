@@ -142,7 +142,7 @@ int init_server_network(int port){
 
 int init_server_local(char* path){
     int socket_local;
-    if ((socket_local = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0)) == 0){
+    if ((socket_local = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0)) == 0){
         perror("SOCKET FAILED");
     }
 
@@ -159,10 +159,10 @@ int init_server_local(char* path){
         perror("BIND FAILED");
     }
 
-    if (listen(socket_local, 10) < 0) {
-        perror("LISTEN FAILED");
-        exit(EXIT_FAILURE);
-    }
+//    if (listen(socket_local, 10) < 0) {
+//        perror("LISTEN LOCAL FAILED");
+//        exit(EXIT_FAILURE);
+//    }
 
     fds[SERVER_ID_LOCAL].fd = socket_local;
     fds[SERVER_ID_LOCAL].events = POLLIN;
@@ -269,6 +269,10 @@ int main(void) {
 
             } else {
                 memset(buffer, 0, sizeof(buffer));
+//                struct sockaddr from_addr;
+//                socklen_t from_length = sizeof(struct sockaddr);
+//                rc = recvfrom(fds[i].fd, buffer, sizeof(buffer), 0, &from_addr, &from_length);
+
                 rc = recv(fds[i].fd, buffer, sizeof(buffer), 0);
 
                 if (rc < 0) {
@@ -277,6 +281,8 @@ int main(void) {
                 } else if (rc == 0) {
                     continue;
                 }
+
+                print("message %s", buffer)
 
                 if (clients[i] == NAME_UNKNOWN) {
                     char name[message_size];

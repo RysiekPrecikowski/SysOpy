@@ -41,14 +41,15 @@ void bye(){
 
 #define LOCAL 0
 #define NETWORK 1
+
+struct sockaddr_un address;
 int init_connection(int type, char* arg){
     int sock;
     if (type == LOCAL){
-        if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        if ((sock = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
             perror("SOCKET FAILED");
         }
 
-        struct sockaddr_un address;
         address.sun_family = AF_UNIX;
 
         strcpy(address.sun_path, arg);
@@ -122,7 +123,7 @@ int main(int argc, char* argv[]) {
 
     sprintf(login_message, login_format, name);
 
-    send(sock, login_message, strlen(login_message), 0);
+    sendto(sock, login_message, strlen(login_message), 0, &address, sizeof (address));
 
     rc = recv(sock, buffer, sizeof(buffer), 0);
 
@@ -142,7 +143,10 @@ int main(int argc, char* argv[]) {
     }
 
 
+    return 0;
+
     while (true) {
+        sleep(1);
         rc = poll(fds, 2, timeout);
 
         if (rc < 0) {
